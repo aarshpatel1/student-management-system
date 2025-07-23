@@ -1,21 +1,24 @@
 {
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.4",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "passport": "^0.7.0"
+    "passport": "^0.7.0",
+    "sharp": "^0.34.3"
   },
   "name": "server",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"

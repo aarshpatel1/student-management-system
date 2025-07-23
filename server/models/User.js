@@ -1,4 +1,4 @@
-import cloudinary from "../config/cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
 import mongoose from "mongoose";
 import multer from "multer";
@@ -81,7 +81,7 @@ const storage = new CloudinaryStorage({
 	cloudinary: cloudinary,
 	params: async (req, file) => {
 		return {
-			folder: "Students",
+			folder: "Users",
 			format: "jpg",
 			transformation: [
 				{

@@ -1,9 +1,11 @@
-import express from "express";
-import { config } from "dotenv";
+import db from "./config/db.js";
 import router from "./routes/index.js";
 
+import express from "express";
+import { config } from "dotenv";
+
 config({
-	path: "../.env",
+	path: "./.env",
 	quiet: true,
 });
 

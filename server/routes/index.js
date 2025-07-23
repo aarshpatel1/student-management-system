@@ -1,4 +1,3 @@
-import express from "express";
 import userRoutes from "./userRoutes.js";
 import studentRoutes from "./studentRoutes.js";
 import facultyRoutes from "./facultyRoutes.js";
@@ -6,6 +5,8 @@ import enrollmentRoutes from "./enrollmentRoutes.js";
 import courseRoutes from "./courseRoutes.js";
 import feeRoutes from "./feeRoutes.js";
 import batchRoutes from "./batchRoutes.js";
+
+import express from "express";
 
 const router = express.Router();
 
