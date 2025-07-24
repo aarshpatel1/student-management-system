@@ -31,6 +31,6 @@ router.patch(
 	userController.updateUser
 );
 
-router.delete("/updateUser/:id", userController.deleteUser);
+router.delete("/deleteUser/:id", userController.deleteUser);
 
 export default router;
