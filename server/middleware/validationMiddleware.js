@@ -11,10 +11,10 @@ const handleValidationErrors = async (req, res, next) => {
 			// For multer-storage-cloudinary, the public_id is in req.file.filename (or req.file.public_id)
 			try {
 				await cloudinary.uploader.destroy(req.file.filename);
-			} catch (err) {
+			} catch (e) {
 				console.error(
 					"Failed to delete Cloudinary image after validation error:",
-					err.message
+					e.message
 				);
 			}
 		}
@@ -35,10 +35,7 @@ export const validateUser = (method) => {
 					.trim()
 					.notEmpty()
 					.withMessage("First name is required")
-					.isLength({
-						min: 2,
-						max: 50,
-					})
+					.isLength({ min: 2, max: 50 })
 					.withMessage(
 						"First name must be between 2 and 50 characters"
 					),
@@ -47,10 +44,7 @@ export const validateUser = (method) => {
 					.trim()
 					.notEmpty()
 					.withMessage("Last name is required")
-					.isLength({
-						min: 2,
-						max: 50,
-					})
+					.isLength({ min: 2, max: 50 })
 					.withMessage(
 						"Last name must be between 2 and 50 characters"
 					),
@@ -98,6 +92,8 @@ export const validateUser = (method) => {
 					.withMessage("Role is required")
 					.isIn(["student", "faculty", "admin"])
 					.withMessage("Role must be student, faculty, or admin"),
+
+				handleValidationErrors,
 			];
 		}
 
@@ -121,24 +117,18 @@ export const validateUser = (method) => {
 
 				body("gender")
 					.optional()
-					.notEmpty()
-					.withMessage("Gender is required")
 					.isIn(["male", "female", "other"])
 					.withMessage("Gender must be male, female, or other"),
 
 				body("mobileNumber")
 					.optional()
 					.trim()
-					.notEmpty()
-					.withMessage("Mobile number is required")
 					.isMobilePhone("any")
 					.withMessage("Invalid mobile number format"),
 
 				body("email")
 					.optional()
 					.trim()
-					.notEmpty()
-					.withMessage("Email is required")
 					.isEmail()
 					.withMessage("Invalid email format")
 					.normalizeEmail(),
@@ -152,24 +142,16 @@ export const validateUser = (method) => {
 						"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
 					),
 
-				body("address")
-					.optional()
-					.trim()
-					.notEmpty()
-					.withMessage("Address is required"),
+				body("address").optional().trim(),
 
-				body("city")
-					.optional()
-					.trim()
-					.notEmpty()
-					.withMessage("City is required"),
+				body("city").optional().trim(),
 
 				body("role")
 					.optional()
-					.notEmpty()
-					.withMessage("Role is required")
 					.isIn(["student", "faculty", "admin"])
 					.withMessage("Role must be student, faculty, or admin"),
+
+				handleValidationErrors,
 			];
 		}
 
@@ -177,3 +159,19 @@ export const validateUser = (method) => {
 			return [];
 	}
 };
+
+export const validateGetAllUsersQuery = [
+	query("page")
+		.optional()
+		.isInt({ min: 0 })
+		.withMessage("Page must be a non-negative integer"),
+	query("recordsPerPage")
+		.optional()
+		.isInt({ min: 1, max: 100 })
+		.withMessage("Records per page must be between 1 and 100"),
+	query("sortDirection")
+		.optional()
+		.isIn(["asc", "desc"])
+		.withMessage("Sort direction must be either asc or desc"),
+	handleValidationErrors,
+];
