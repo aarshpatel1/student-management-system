@@ -50,14 +50,14 @@ export default function Navbar() {
 			<Link
 				to="/signup"
 				rel="noopener noreferrer"
-				className="no-underline p-button"
+				className="no-underline p-button text-white"
 			>
 				Signup
 			</Link>
 			<Link
 				to="/login"
 				rel="noopener noreferrer"
-				className="no-underline p-button"
+				className="no-underline p-button text-white"
 			>
 				Login
 			</Link>

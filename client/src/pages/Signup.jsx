@@ -1,9 +1,67 @@
-import React from 'react'
+import React from "react";
+import { InputText } from "primereact/inputtext";
+import { Button } from "primereact/button";
+import { useState } from "react";
 
 function Signup() {
-  return (
-    <h1>Signup</h1>
-  )
+	const [loading, setLoading] = useState(false);
+
+	const load = () => {
+		setLoading(true);
+
+		setTimeout(() => {
+			setLoading(false);
+		}, 2000);
+	};
+
+	return (
+		<>
+			<main className="card flex flex-column justify-content-center align-items-center form-height">
+				<h1 className="text-center" security="secondary">
+					Signup
+				</h1>
+
+				<form
+					action=""
+					className="w-3 border-round-lg px-5 py-5 shadow-2"
+				>
+					<div className="flex flex-column gap-2">
+						<label htmlFor="email">Email</label>
+						<InputText type="email" id="email" name="email" />
+					</div>
+					<div className="flex flex-column gap-2 mt-4">
+						<label htmlFor="password">Password</label>
+						<InputText
+							type="password"
+							id="password"
+							name="password"
+							aria-describedby="password-help"
+						/>
+						<small id="password-help">
+							Password must have 8 characters with atleast one
+							UPPERCASE, lowercase, Special Character and Number
+						</small>
+					</div>
+					<div className="flex flex-column gap-2 mt-4">
+						<label htmlFor="confirmPassword">
+							Confirm Password
+						</label>
+						<InputText
+							type="confirmPassword"
+							id="confirmPassword"
+							name="confirmPassword"
+						/>
+					</div>
+					<Button
+						label="Signup"
+						loading={loading}
+						onClick={load}
+						className="mt-4"
+					/>
+				</form>
+			</main>
+		</>
+	);
 }
 
-export default Signup
+export default Signup;

@@ -1,4 +1,9 @@
 * {
   font-family: "Roboto Mono", monospace;
   font-optical-sizing: auto;
+  /* color: var(--surface-600); */
+}
+
+.form-height {
+  height: calc(100dvh - 200px);
 }
