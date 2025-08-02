@@ -277,3 +277,10 @@ export const deleteUser = async (req, res) => {
 		return handleApiError(res, err, "Failed to delete user");
 	}
 };
+
+export const failedLogin = (req, res) => {
+	return res.status(401).json({
+		status: "Unauthorized",
+		message: "Login Failed. Please try again with valid credentials.",
+	});
+};
