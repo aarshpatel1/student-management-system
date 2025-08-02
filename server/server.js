@@ -38,3 +38,7 @@ app.listen(port, (err) =>
 		? console.error("Error starting server:", err)
 		: console.log(`Server running on http://127.0.0.1:${port}`)
 );
+
+
+
+// set up passport jwt here

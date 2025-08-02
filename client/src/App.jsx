@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import PrivateRoute from "./components/PrivateRoute";
 
 export default function App() {
 	return (
@@ -15,7 +16,14 @@ export default function App() {
 				<Navbar />
 				<Routes>
 					<Route path="/" element={<Home />} />
-					<Route path="/dashboard" element={<Dashboard />} />
+					<Route
+						path="/dashboard"
+						element={
+							<PrivateRoute>
+								<Dashboard />
+							</PrivateRoute>
+						}
+					/>
 					<Route path="/login" element={<Login />} />
 					<Route path="/signup" element={<Signup />} />
 				</Routes>

@@ -1,9 +1,14 @@
-import React from 'react'
+import React from "react";
+import { useEffect } from "react";
+import { isAuthenticated } from "../utils/auth";
 
 function Dashboard() {
-  return (
-    <h1>Dashboard</h1>
-  )
+	useEffect(() => {
+		if (isAuthenticated()) {
+			const token = localStorage.getItem("token");
+		}
+	}, []);
+	return <h1>Dashboard</h1>;
 }
 
-export default Dashboard
+export default Dashboard;

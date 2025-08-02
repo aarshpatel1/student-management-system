@@ -25,7 +25,6 @@ function Login() {
 		e.preventDefault();
 		setLoading(true);
 
-		// Basic validations
 		if (!credentials.email) {
 			setValidationErrors({
 				field: "email",
@@ -56,7 +55,6 @@ function Login() {
 		try {
 			const response = await authAPI.login(credentials);
 
-			// ✅ Assuming your API returns token in response.data.token
 			const { token } = response.data;
 
 			localStorage.setItem("token", token);
@@ -68,10 +66,8 @@ function Login() {
 				life: 3000,
 			});
 
-			// ✅ Redirect after successful login
 			navigate("/dashboard");
 
-			// ✅ Clear errors and form state AFTER success
 			setCredentials({});
 			setValidationErrors({});
 		} catch (err) {
@@ -80,19 +76,16 @@ function Login() {
 			if (isAxiosError(err)) {
 				const res = err.response;
 
-				// ✅ Check if backend sent 'field' and 'message'
 				if (res && res.data) {
 					const field = res.data.field;
 					const message = res.data.message;
 
-					// ✅ Handle known fields
 					if (field === "email" || field === "password") {
 						setValidationErrors({
 							field,
 							errorMessage: message || "Invalid credentials.",
 						});
 					} else {
-						// ✅ Unknown error field or general message
 						toast.current.show({
 							severity: "error",
 							summary: "Login Error",
@@ -103,7 +96,6 @@ function Login() {
 						});
 					}
 				} else {
-					// ✅ Network or server-side error without response
 					toast.current.show({
 						severity: "error",
 						summary: "Server Error",
@@ -113,7 +105,7 @@ function Login() {
 				}
 			}
 		} finally {
-			setLoading(false); // ✅ Always stop loading regardless of outcome
+			setLoading(false);
 		}
 	};
 
@@ -136,6 +128,7 @@ function Login() {
 							name="email"
 							value={credentials.email || ""}
 							onChange={handleChange}
+							autoComplete="true"
 						/>
 						{validationErrors.field === "email" && (
 							<Message
