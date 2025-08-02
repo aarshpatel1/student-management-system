@@ -58,7 +58,7 @@ function Signup() {
 		if (!emailRegex.test(data.email)) {
 			setValidationErrors({
 				field: "email",
-				errorMessage: "There should be a valid email address given.",
+				errorMessage: "There should be a valid email address.",
 			});
 			setLoading(false);
 			return;
