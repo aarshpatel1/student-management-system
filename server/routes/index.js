@@ -5,6 +5,7 @@ import enrollmentRoutes from "./enrollmentRoutes.js";
 import courseRoutes from "./courseRoutes.js";
 import feeRoutes from "./feeRoutes.js";
 import batchRoutes from "./batchRoutes.js";
+import authRoutes from "./authRoutes.js";
 
 import express from "express";
 
@@ -42,6 +43,8 @@ router.use("/course", courseRoutes);
 
 router.use("/enrollement", enrollmentRoutes);
 
-router.use("/fee", batchRoutes);
+router.use("/fee", feeRoutes);
+
+router.use("/auth", authRoutes);
 
 export default router;
