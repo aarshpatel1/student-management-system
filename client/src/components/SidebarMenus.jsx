@@ -15,8 +15,6 @@ export default function SidebarMenus() {
 	const [visible, setVisible] = useState(false);
 	const btnRef1 = useRef(null);
 	const btnRef2 = useRef(null);
-	const btnRef3 = useRef(null);
-	const btnRef4 = useRef(null);
 
 	const [currentUser, setCurrentUser] = useState({});
 
@@ -79,6 +77,10 @@ export default function SidebarMenus() {
 
 	const toTitleCase = (str) => {
 		return str.charAt(0).toUpperCase() + str.slice(1);
+	};
+
+	const handleNavigate = () => {
+		setVisible(false);
 	};
 
 	return (
@@ -150,6 +152,9 @@ export default function SidebarMenus() {
 																	"/admin/addUser"
 																}
 																className="font-medium flex align-items-center gap-2"
+																onClick={
+																	handleNavigate
+																}
 															>
 																<Icon
 																	icon="fluent:table-add-20-regular"
@@ -168,6 +173,9 @@ export default function SidebarMenus() {
 																	"/admin/viewUsers"
 																}
 																className="font-medium flex align-items-center gap-2"
+																onClick={
+																	handleNavigate
+																}
 															>
 																<Icon
 																	icon="fluent:table-search-20-regular"
@@ -186,7 +194,7 @@ export default function SidebarMenus() {
 									<ul className="list-none p-3 m-0">
 										<li>
 											<StyleClass
-												nodeRef={btnRef4}
+												nodeRef={btnRef2}
 												selector="@next"
 												enterFromClassName="hidden"
 												enterActiveClassName="slidedown"
@@ -194,7 +202,7 @@ export default function SidebarMenus() {
 												leaveActiveClassName="slideup"
 											>
 												<div
-													ref={btnRef4}
+													ref={btnRef2}
 													className="p-ripple p-3 flex align-items-center justify-content-between text-600 cursor-pointer"
 												>
 													<span className="font-medium">
@@ -208,7 +216,12 @@ export default function SidebarMenus() {
 												<li>
 													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-folder mr-2"></i>
-														<span className="font-medium">
+														<span
+															className="font-medium"
+															onClick={
+																handleNavigate
+															}
+														>
 															Projects
 														</span>
 														<Ripple />
@@ -217,7 +230,12 @@ export default function SidebarMenus() {
 												<li>
 													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-chart-bar mr-2"></i>
-														<span className="font-medium">
+														<span
+															className="font-medium"
+															onClick={
+																handleNavigate
+															}
+														>
 															Performance
 														</span>
 														<Ripple />
@@ -226,7 +244,12 @@ export default function SidebarMenus() {
 												<li>
 													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-comments mr-2"></i>
-														<span className="font-medium">
+														<span
+															className="font-medium"
+															onClick={
+																handleNavigate
+															}
+														>
 															Messages
 														</span>
 														<span
@@ -245,7 +268,12 @@ export default function SidebarMenus() {
 												<li>
 													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-calendar mr-2"></i>
-														<span className="font-medium">
+														<span
+															className="font-medium"
+															onClick={
+																handleNavigate
+															}
+														>
 															Calendar
 														</span>
 														<Ripple />
@@ -254,7 +282,12 @@ export default function SidebarMenus() {
 												<li>
 													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-cog mr-2"></i>
-														<span className="font-medium">
+														<span
+															className="font-medium"
+															onClick={
+																handleNavigate
+															}
+														>
 															Settings
 														</span>
 														<Ripple />
@@ -283,11 +316,6 @@ export default function SidebarMenus() {
 											shape="circle"
 											size="large"
 											className="ml-2"
-											onClick={(event) =>
-												menuRight.current.toggle(event)
-											}
-											aria-controls="popup_menu_right"
-											aria-haspopup
 										/>
 										<span className="font-bold ml-3">
 											{currentUser.firstName}{" "}
