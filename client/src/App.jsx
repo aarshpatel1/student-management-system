@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route } from "react-router";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // general
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-
 import Dashboard from "./pages/Dashboard";
 
 // admin
@@ -16,7 +16,7 @@ import ViewUsers from "./pages/Admin/ViewUsers";
 
 export default function App() {
 	return (
-		<>
+		<AuthProvider>
 			<BrowserRouter>
 				<Navbar />
 				<Routes>
@@ -50,6 +50,6 @@ export default function App() {
 					<Route path="/signup" element={<Signup />} />
 				</Routes>
 			</BrowserRouter>
-		</>
+		</AuthProvider>
 	);
 }

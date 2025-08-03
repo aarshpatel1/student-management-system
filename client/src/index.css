@@ -12,3 +12,13 @@ a {
   color: var(--primary-500);
   text-decoration: none;
 }
+
+.blur {
+  background-color: #ffffff60;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.text-muted {
+  color: var(--surface-500);
+}

@@ -1,123 +1,29 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Menubar } from "primereact/menubar";
 import { InputText } from "primereact/inputtext";
 import { Badge } from "primereact/badge";
 import { Avatar } from "primereact/avatar";
 import { Button } from "primereact/button";
 import { Link } from "react-router";
-import { isAuthenticated } from "../utils/auth";
 import { Menu } from "primereact/menu";
-import axios from "axios";
-import api from "../../config/axiosConfig";
 import SidebarMenus from "./SidebarMenus";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
 	const menuRight = useRef(null);
+	const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
-	const [currentUser, setCurrentUser] = useState({});
-	const [windowWidth, setWindowWidth] = useState(window.innerWidth); // Added for responsive
+	// Use the auth context instead of local state
+	const { currentUser, isAuth, logout } = useAuth();
 
-	useEffect(() => {
-		// Track window width for responsive logic
+	// Track window width for responsive logic
+	React.useEffect(() => {
 		const handleResize = () => setWindowWidth(window.innerWidth);
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
 	const isSmallScreen = windowWidth < 768;
-
-	useEffect(() => {
-		// Check authentication when component mounts
-		const checkAndLoadUser = () => {
-			if (isAuthenticated()) {
-				const token = localStorage.getItem("token");
-				if (token) {
-					try {
-						const base64Url = token.split(".")[1];
-						const base64 = base64Url
-							.replace(/-/g, "+")
-							.replace(/_/g, "/");
-						const jsonPayload = decodeURIComponent(
-							atob(base64)
-								.split("")
-								.map(function (c) {
-									return (
-										"%" +
-										(
-											"00" + c.charCodeAt(0).toString(16)
-										).slice(-2)
-									);
-								})
-								.join("")
-						);
-						const payload = JSON.parse(jsonPayload);
-						const userId = payload.id;
-						axios.defaults.headers.common[
-							"Authorization"
-						] = `Bearer ${token}`;
-						fetchCurrentUser(token, userId);
-					} catch (err) {
-						console.error("Error decoding token:", err);
-					}
-				}
-			} else {
-				setCurrentUser({});
-			}
-		};
-
-		// Initial check when component mounts
-		checkAndLoadUser();
-
-		const handleUserLoggedIn = () => {
-			checkAndLoadUser();
-		};
-
-		const handleUserLoggedOut = () => {
-			axios.defaults.headers.common["Authorization"] = "";
-			localStorage.removeItem("token");
-			setCurrentUser({});
-		};
-
-		// Listen for login and logout events
-		window.addEventListener("userLoggedIn", handleUserLoggedIn);
-		window.addEventListener("userLoggedOut", handleUserLoggedOut);
-
-		return () => {
-			window.removeEventListener("userLoggedIn", handleUserLoggedIn);
-			window.removeEventListener("userLoggedOut", handleUserLoggedOut);
-		};
-	}, []);
-
-	const fetchCurrentUser = async (token, userId) => {
-		try {
-			const response = await api.get(`/user/getUser/${userId}`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-			// console.log("Current User:", response.data);
-			setCurrentUser(response.data.user);
-		} catch (error) {
-			console.error("Error fetching current user:", error);
-		}
-	};
-
-	const handleLogout = () => {
-		// Remove token from local storage
-		localStorage.removeItem("token");
-
-		// Clear auth header
-		axios.defaults.headers.common["Authorization"] = "";
-
-		// Clear current user state
-		setCurrentUser({});
-
-		// Dispatch logout event
-		window.dispatchEvent(new Event("userLoggedOut"));
-
-		// Redirect to home page
-		window.location.href = "/";
-	};
 
 	const itemRenderer = (item) => (
 		<div className="p-menuitem-content">
@@ -158,7 +64,7 @@ export default function Navbar() {
 					icon: "pi pi-sign-out",
 					shortcut: "⌘+Q",
 					template: itemRenderer,
-					command: handleLogout,
+					command: logout, // Use the logout function from context
 				},
 			],
 		},
@@ -211,7 +117,7 @@ export default function Navbar() {
 
 	const start = (
 		<div className="flex align-items-center gap-2">
-			{isAuthenticated() && <SidebarMenus />}
+			{isAuth && <SidebarMenus />}
 			<img
 				alt="logo"
 				src="https://primefaces.org/cdn/primereact/images/logo.png"
@@ -229,17 +135,8 @@ export default function Navbar() {
 				placeholder="Search"
 				className="w-8rem sm:w-auto"
 			/>
-			{!isAuthenticated() ? (
+			{!isAuth ? (
 				<>
-					{/* {!isSmallScreen && (
-						<Link
-							to="/signup"
-							rel="noopener noreferrer"
-							className="no-underline p-button text-white"
-						>
-							Signup
-						</Link>
-					)} */}
 					<Link
 						to="/login"
 						rel="noopener noreferrer"
@@ -280,8 +177,13 @@ export default function Navbar() {
 	);
 
 	return (
-		<div className="card">
-			<Menubar model={items} start={start} end={end} />
+		<div className="card sticky top-0 z-3">
+			<Menubar
+				model={items}
+				start={start}
+				end={end}
+				className="blur shadow-1"
+			/>
 		</div>
 	);
 }

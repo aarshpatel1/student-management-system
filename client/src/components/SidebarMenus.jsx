@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Avatar } from "primereact/avatar";
@@ -7,84 +7,29 @@ import { StyleClass } from "primereact/styleclass";
 import { Icon } from "@iconify-icon/react";
 import LogoSVG from "./LogoSVG";
 import { Link } from "react-router";
-import { isAuthenticated } from "../utils/auth";
-import axios from "axios";
-import api from "../../config/axiosConfig";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function SidebarMenus() {
 	const [visible, setVisible] = useState(false);
 	const btnRef1 = useRef(null);
 	const btnRef2 = useRef(null);
+	const btnRef3 = useRef(null);
+	const btnRef4 = useRef(null);
 
-	const [currentUser, setCurrentUser] = useState({});
-
-	useEffect(() => {
-		// Check authentication when component mounts
-		const checkAndLoadUser = () => {
-			if (isAuthenticated()) {
-				const token = localStorage.getItem("token");
-				if (token) {
-					try {
-						const base64Url = token.split(".")[1];
-						const base64 = base64Url
-							.replace(/-/g, "+")
-							.replace(/_/g, "/");
-						const jsonPayload = decodeURIComponent(
-							atob(base64)
-								.split("")
-								.map(function (c) {
-									return (
-										"%" +
-										(
-											"00" + c.charCodeAt(0).toString(16)
-										).slice(-2)
-									);
-								})
-								.join("")
-						);
-						const payload = JSON.parse(jsonPayload);
-						const userId = payload.id;
-						axios.defaults.headers.common[
-							"Authorization"
-						] = `Bearer ${token}`;
-						fetchCurrentUser(token, userId);
-					} catch (err) {
-						console.error("Error decoding token:", err);
-					}
-				}
-			} else {
-				setCurrentUser({});
-			}
-		};
-
-		// Initial check when component mounts
-		checkAndLoadUser();
-	}, []);
-
-	const fetchCurrentUser = async (token, userId) => {
-		try {
-			const response = await api.get(`/user/getUser/${userId}`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-			// console.log("Current User:", response.data);
-			setCurrentUser(response.data.user);
-		} catch (error) {
-			console.error("Error fetching current user:", error);
-		}
-	};
+	// Use the auth context
+	const { currentUser } = useAuth();
 
 	const toTitleCase = (str) => {
-		return str.charAt(0).toUpperCase() + str.slice(1);
+		return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 	};
 
+	// Add a navigation handler function that closes the sidebar
 	const handleNavigate = () => {
 		setVisible(false);
 	};
 
 	return (
-		<div className="card flex justify-content-center">
+		<div className="card flex justify-content-center blur shadow-1">
 			<Sidebar
 				visible={visible}
 				onHide={() => setVisible(false)}
@@ -109,9 +54,8 @@ export default function SidebarMenus() {
 											ref={closeIconRef}
 											onClick={(e) => hide(e)}
 											icon="pi pi-times"
-											rounded
-											outlined
 											className="h-2rem w-2rem"
+											text
 										></Button>
 									</span>
 								</div>

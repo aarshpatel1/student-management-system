@@ -5,6 +5,7 @@ import { Dropdown } from "primereact/dropdown";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { Toast } from "primereact/toast";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function AddUser() {
 	const toast = useRef(null);
@@ -14,6 +15,8 @@ export default function AddUser() {
 	const [gender, setGender] = useState("");
 	const [role, setRole] = useState("");
 	const [selectedCity, setSelectedCity] = useState(null);
+
+	const { currentUser, isAuth, logout } = useAuth();
 
 	const cities = [
 		{ name: "New York", code: "NY" },
@@ -293,7 +296,7 @@ export default function AddUser() {
 							aria-describedby="password-help"
 							onChange={handleChange}
 						/>
-						<small id="password-help">
+						<small id="password-help" className="text-muted">
 							Password must have 8 characters with atleast one
 							UPPERCASE, lowercase, Special Character and Number
 						</small>
@@ -366,18 +369,20 @@ export default function AddUser() {
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="role">Role</label>
 						<div className="flex flex-wrap gap-3">
-							<div className="flex align-items-center">
-								<RadioButton
-									inputId="role1"
-									name="role"
-									value="Admin"
-									onChange={(e) => setRole(e.value)}
-									checked={role === "Admin"}
-								/>
-								<label htmlFor="role1" className="ml-2">
-									Admin
-								</label>
-							</div>
+							{isAuth && currentUser.role === "admin" && (
+								<div className="flex align-items-center">
+									<RadioButton
+										inputId="role1"
+										name="role"
+										value="Admin"
+										onChange={(e) => setRole(e.value)}
+										checked={role === "Admin"}
+									/>
+									<label htmlFor="role1" className="ml-2">
+										Admin
+									</label>
+								</div>
+							)}
 							<div className="flex align-items-center">
 								<RadioButton
 									inputId="role2"
