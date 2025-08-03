@@ -59,6 +59,9 @@ function Login() {
 
 			localStorage.setItem("token", token);
 
+			// Notify Navbar to refresh
+			window.dispatchEvent(new Event("userLoggedIn"));
+
 			toast.current.show({
 				severity: "success",
 				summary: "Success",

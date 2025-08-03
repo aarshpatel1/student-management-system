@@ -7,7 +7,6 @@ import { Button } from "primereact/button";
 import { Link } from "react-router";
 import { isAuthenticated } from "../utils/auth";
 import { Menu } from "primereact/menu";
-import { classNames } from "primereact/utils";
 import axios from "axios";
 import api from "../../config/axiosConfig";
 
@@ -17,45 +16,65 @@ export default function Navbar() {
 	const [currentUser, setCurrentUser] = useState({});
 
 	useEffect(() => {
-		if (isAuthenticated()) {
-			const token = localStorage.getItem("token");
-			// console.log("Token:", token);
-
-			if (token) {
-				try {
-					const base64Url = token.split(".")[1];
-					const base64 = base64Url
-						.replace(/-/g, "+")
-						.replace(/_/g, "/");
-					const jsonPayload = decodeURIComponent(
-						atob(base64)
-							.split("")
-							.map(function (c) {
-								return (
-									"%" +
-									("00" + c.charCodeAt(0).toString(16)).slice(
-										-2
-									)
-								);
-							})
-							.join("")
-					);
-
-					const payload = JSON.parse(jsonPayload);
-					// console.log("Decoded Payload:", payload);
-					const userId = payload.id;
-					// console.log("User ID from token:", userId);
-
-					axios.defaults.headers.common[
-						"Authorization"
-					] = `Bearer ${token}`;
-
-					fetchCurrentUser(token, userId);
-				} catch (err) {
-					console.error("Error decoding token:", err);
+		// Check authentication when component mounts
+		const checkAndLoadUser = () => {
+			if (isAuthenticated()) {
+				const token = localStorage.getItem("token");
+				if (token) {
+					try {
+						const base64Url = token.split(".")[1];
+						const base64 = base64Url
+							.replace(/-/g, "+")
+							.replace(/_/g, "/");
+						const jsonPayload = decodeURIComponent(
+							atob(base64)
+								.split("")
+								.map(function (c) {
+									return (
+										"%" +
+										(
+											"00" + c.charCodeAt(0).toString(16)
+										).slice(-2)
+									);
+								})
+								.join("")
+						);
+						const payload = JSON.parse(jsonPayload);
+						const userId = payload.id;
+						axios.defaults.headers.common[
+							"Authorization"
+						] = `Bearer ${token}`;
+						fetchCurrentUser(token, userId);
+					} catch (err) {
+						console.error("Error decoding token:", err);
+					}
 				}
+			} else {
+				setCurrentUser({});
 			}
-		}
+		};
+
+		// Initial check when component mounts
+		checkAndLoadUser();
+
+		const handleUserLoggedIn = () => {
+			checkAndLoadUser();
+		};
+
+		const handleUserLoggedOut = () => {
+			axios.defaults.headers.common["Authorization"] = "";
+			localStorage.removeItem("token");
+			setCurrentUser({});
+		};
+
+		// Listen for login and logout events
+		window.addEventListener("userLoggedIn", handleUserLoggedIn);
+		window.addEventListener("userLoggedOut", handleUserLoggedOut);
+
+		return () => {
+			window.removeEventListener("userLoggedIn", handleUserLoggedIn);
+			window.removeEventListener("userLoggedOut", handleUserLoggedOut);
+		};
 	}, []);
 
 	const fetchCurrentUser = async (token, userId) => {
@@ -72,9 +91,29 @@ export default function Navbar() {
 		}
 	};
 
+	const handleLogout = () => {
+		// Remove token from local storage
+		localStorage.removeItem("token");
+
+		// Clear auth header
+		axios.defaults.headers.common["Authorization"] = "";
+
+		// Clear current user state
+		setCurrentUser({});
+
+		// Dispatch logout event
+		window.dispatchEvent(new Event("userLoggedOut"));
+
+		// Redirect to home page (you might need to use navigate from react-router-dom in a real implementation)
+		window.location.href = "/";
+	};
+
 	const itemRenderer = (item) => (
 		<div className="p-menuitem-content">
-			<a className="flex align-items-center p-menuitem-link">
+			<a
+				className="flex align-items-center p-menuitem-link"
+				onClick={item.command}
+			>
 				<span className={item.icon} />
 				<span className="mx-2">{item.label}</span>
 				{item.badge && <Badge className="ml-auto" value={item.badge} />}
@@ -108,6 +147,7 @@ export default function Navbar() {
 					icon: "pi pi-sign-out",
 					shortcut: "⌘+Q",
 					template: itemRenderer,
+					command: handleLogout,
 				},
 			],
 		},
