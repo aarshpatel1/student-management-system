@@ -22,3 +22,5 @@ export const userAPI = {
 	update: (id, userData) => api.patch(`/user/updateUser/${id}`, userData),
 	delete: (id) => api.delete(`/user/deleteUser/${id}`),
 };
+
+export default api;

@@ -18,9 +18,8 @@ const jwtOptions = {
 passport.use(
 	"jwt",
 	new JwtStrategy(jwtOptions, async (payload, done) => {
-		console.log(payload.id);
+		// console.log(payload.id);
 		try {
-			// Fix: Check for payload.id only
 			if (!payload.id) {
 				return done(null, false, { message: "Invalid token payload" });
 			}
@@ -69,23 +68,3 @@ passport.deserializeUser(async (id, done) => {
 });
 
 export default passport;
-
-// import jwt from "jsonwebtoken";
-// import Users from "../models/User.js";
-
-// export const protect = async (req, res, next) => {
-// 	const authHeader = req.headers.authorization;
-
-// 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
-// 		return res.status(401).json({ message: "Not authorized" });
-// 	}
-
-// 	try {
-// 		const token = authHeader.split(" ")[1];
-// 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
-// 		req.user = await Users.findById(decoded.id).select("-password");
-// 		next();
-// 	} catch (error) {
-// 		res.status(401).json({ message: "Token failed" });
-// 	}
-// };

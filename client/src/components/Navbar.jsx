@@ -8,6 +8,8 @@ import { Link } from "react-router";
 import { isAuthenticated } from "../utils/auth";
 import { Menu } from "primereact/menu";
 import { classNames } from "primereact/utils";
+import axios from "axios";
+import api from "../../config/axiosConfig";
 
 export default function Navbar() {
 	const menuRight = useRef(null);
@@ -17,12 +19,58 @@ export default function Navbar() {
 	useEffect(() => {
 		if (isAuthenticated()) {
 			const token = localStorage.getItem("token");
+			// console.log("Token:", token);
 
-			console.log(token);
+			if (token) {
+				try {
+					const base64Url = token.split(".")[1];
+					const base64 = base64Url
+						.replace(/-/g, "+")
+						.replace(/_/g, "/");
+					const jsonPayload = decodeURIComponent(
+						atob(base64)
+							.split("")
+							.map(function (c) {
+								return (
+									"%" +
+									("00" + c.charCodeAt(0).toString(16)).slice(
+										-2
+									)
+								);
+							})
+							.join("")
+					);
 
-			
+					const payload = JSON.parse(jsonPayload);
+					// console.log("Decoded Payload:", payload);
+					const userId = payload.id;
+					// console.log("User ID from token:", userId);
+
+					axios.defaults.headers.common[
+						"Authorization"
+					] = `Bearer ${token}`;
+
+					fetchCurrentUser(token, userId);
+				} catch (err) {
+					console.error("Error decoding token:", err);
+				}
+			}
 		}
 	}, []);
+
+	const fetchCurrentUser = async (token, userId) => {
+		try {
+			const response = await api.get(`/user/getUser/${userId}`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			// console.log("Current User:", response.data);
+			setCurrentUser(response.data.user);
+		} catch (error) {
+			console.error("Error fetching current user:", error);
+		}
+	};
 
 	const itemRenderer = (item) => (
 		<div className="p-menuitem-content">
@@ -67,31 +115,29 @@ export default function Navbar() {
 			separator: true,
 		},
 		{
-			command: () => {
-				toast.current.show({
-					severity: "info",
-					summary: "Info",
-					detail: "Item Selected",
-					life: 3000,
-				});
-			},
-			template: (item, options) => {
+			template: () => {
 				return (
-					<button
-						onClick={(e) => options.onClick(e)}
-						className={classNames(
-							options.className,
-							"w-full p-link flex align-items-center p-2 pl-4 text-color hover:surface-200 border-noround"
-						)}
-					>
+					<button className="w-full p-link flex align-items-center p-2 pl-4 text-color hover:surface-200 border-noround">
 						<Avatar
-							image="https://primefaces.org/cdn/primereact/images/avatar/amyelsner.png"
+							image={
+								currentUser.profilePhoto &&
+								currentUser.profilePhoto.url
+									? currentUser.profilePhoto.url
+									: ""
+							}
+							alt={`${
+								currentUser.firstName
+									? currentUser.firstName
+									: ""
+							}'s profile`}
 							className="mr-2"
 							shape="circle"
 						/>
 						<div className="flex flex-column align">
-							<span className="font-bold">Amy Elsner</span>
-							<span className="text-sm">Agent</span>
+							<span className="font-bold">
+								{currentUser.firstName} {currentUser.lastName}
+							</span>
+							<span className="text-sm">{currentUser.role}</span>
 						</div>
 					</button>
 				);
@@ -156,7 +202,15 @@ export default function Navbar() {
 						popupAlignment="right"
 					/>
 					<Avatar
-						image="https://primefaces.org/cdn/primereact/images/avatar/amyelsner.png"
+						image={
+							currentUser.profilePhoto &&
+							currentUser.profilePhoto.url
+								? currentUser.profilePhoto.url
+								: ""
+						}
+						alt={`${
+							currentUser.firstName ? currentUser.firstName : ""
+						}'s profile`}
 						shape="circle"
 						size="large"
 						className="ml-2"
