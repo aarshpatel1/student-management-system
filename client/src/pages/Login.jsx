@@ -120,7 +120,7 @@ function Login() {
 				</h1>
 
 				<form
-					className="w-4 border-round-lg px-5 py-5 shadow-2"
+					className="border-round-lg px-5 py-5 shadow-2 w-full sm:w-8 md:w-6 lg:w-4 xl:w-3"
 					onSubmit={handleSubmit}
 				>
 					<div className="flex flex-column gap-2">
@@ -158,11 +158,14 @@ function Login() {
 						)}
 					</div>
 
-					<Button
-						label="Login" // ✅ fixed label
-						loading={loading}
-						className="mt-4"
-					/>
+					<Button label="Login" loading={loading} className="mt-4" />
+
+					<div className="flex mt-3 justify-content-center">
+						Don't have an account?
+						<a href="/signup" className="ml-2 font-bold">
+							Sign Up
+						</a>
+					</div>
 				</form>
 
 				<Toast ref={toast} position="bottom-right" />

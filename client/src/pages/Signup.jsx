@@ -127,7 +127,7 @@ function Signup() {
 		setLoading(false);
 		setData({});
 		setValidationErrors({});
-		
+
 		toast.current.show({
 			severity: "success",
 			summary: "Success",
@@ -144,8 +144,7 @@ function Signup() {
 				</h1>
 
 				<form
-					action=""
-					className="w-4 border-round-lg px-5 py-5 shadow-2"
+					className="border-round-lg px-5 py-5 shadow-2 w-full sm:w-8 md:w-6 lg:w-4 xl:w-3"
 					onSubmit={handleSubmit}
 				>
 					<div className="flex flex-column gap-2">
@@ -210,6 +209,13 @@ function Signup() {
 						)}
 					</div>
 					<Button label="Signup" loading={loading} className="mt-4" />
+
+					<div className="flex mt-3 justify-content-center">
+						Already have an account?
+						<a href="/login" className="ml-2 font-bold">
+							Login
+						</a>
+					</div>
 				</form>
 				<Toast ref={toast} position="bottom-right" />
 			</main>

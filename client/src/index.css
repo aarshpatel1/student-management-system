@@ -7,3 +7,12 @@
 .form-height {
   height: calc(100dvh - 200px);
 }
+
+a {
+  color: var(--primary-500);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

@@ -14,6 +14,16 @@ export default function Navbar() {
 	const menuRight = useRef(null);
 
 	const [currentUser, setCurrentUser] = useState({});
+	const [windowWidth, setWindowWidth] = useState(window.innerWidth); // Added for responsive
+
+	useEffect(() => {
+		// Track window width for responsive logic
+		const handleResize = () => setWindowWidth(window.innerWidth);
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	const isSmallScreen = windowWidth < 768;
 
 	useEffect(() => {
 		// Check authentication when component mounts
@@ -104,7 +114,7 @@ export default function Navbar() {
 		// Dispatch logout event
 		window.dispatchEvent(new Event("userLoggedOut"));
 
-		// Redirect to home page (you might need to use navigate from react-router-dom in a real implementation)
+		// Redirect to home page
 		window.location.href = "/";
 	};
 
@@ -217,13 +227,15 @@ export default function Navbar() {
 			/>
 			{!isAuthenticated() ? (
 				<>
-					<Link
-						to="/signup"
-						rel="noopener noreferrer"
-						className="no-underline p-button text-white"
-					>
-						Signup
-					</Link>
+					{!isSmallScreen && (
+						<Link
+							to="/signup"
+							rel="noopener noreferrer"
+							className="no-underline p-button text-white"
+						>
+							Signup
+						</Link>
+					)}
 					<Link
 						to="/login"
 						rel="noopener noreferrer"
