@@ -6,19 +6,13 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
-// admin
-import PrivateRoute from "./components/PrivateRoute";
 import Dashboard from "./pages/Dashboard";
 
-// faculty
-import AddFaculty from "./pages/Faculty/AddFaculty";
-import EditFaculty from "./pages/Faculty/EditFaculty";
-import ViewFaculties from "./pages/Faculty/ViewFaculties";
-
-// student
-import AddStudent from "./pages/Student/AddStudent";
-import EditStudent from "./pages/Student/EditStudent";
-import ViewStudents from "./pages/Student/ViewStudents";
+// admin
+import PrivateRoute from "./components/PrivateRoute";
+import AddUser from "./pages/Admin/AddUser";
+import EditUser from "./pages/Admin/EditUser";
+import ViewUsers from "./pages/Admin/ViewUsers";
 
 export default function App() {
 	return (
@@ -37,28 +31,16 @@ export default function App() {
 										element={<Dashboard />}
 									/>
 									<Route
-										path="faculty/add"
-										element={<AddFaculty />}
+										path="addUser"
+										element={<AddUser />}
 									/>
 									<Route
-										path="faculty/edit/:id"
-										element={<EditFaculty />}
+										path="editUser/:id"
+										element={<EditUser />}
 									/>
 									<Route
-										path="faculty/view"
-										element={<ViewFaculties />}
-									/>
-									<Route
-										path="student/add"
-										element={<AddStudent />}
-									/>
-									<Route
-										path="student/edit/:id"
-										element={<EditStudent />}
-									/>
-									<Route
-										path="student/view"
-										element={<ViewStudents />}
+										path="viewUsers"
+										element={<ViewUsers />}
 									/>
 								</Routes>
 							</PrivateRoute>

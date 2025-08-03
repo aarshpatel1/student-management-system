@@ -4,7 +4,7 @@ import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { Toast } from "primereact/toast";
 
-export default function AddFaculty() {
+export default function AddUser() {
 	const toast = useRef(null);
 	const [data, setData] = useState({});
 	const [loading, setLoading] = useState(false);

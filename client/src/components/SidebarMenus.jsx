@@ -142,134 +142,42 @@ export default function SidebarMenus() {
 													</div>
 												</StyleClass>
 
-												<ul className="list-none p-0 m-0 overflow-hidden pl-3	">
+												<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
 													<li>
-														<StyleClass
-															nodeRef={btnRef2}
-															selector="@next"
-															enterFromClassName="hidden"
-															enterActiveClassName="slidedown"
-															leaveToClassName="hidden"
-															leaveActiveClassName="slideup"
-														>
-															<span
-																ref={btnRef2}
-																className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+														<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+															<Link
+																to={
+																	"/admin/addUser"
+																}
+																className="font-medium flex align-items-center gap-2"
 															>
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="streamline-plump:class-lesson"
-																		width="24"
-																		height="24"
-																	/>
-																	Faculties
-																</span>
-																<i className="pi pi-chevron-down ml-auto mr-1"></i>
-																<Ripple />
-															</span>
-														</StyleClass>
-														<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
-															<li>
-																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																	<Link
-																		to={
-																			"/admin/faculty/add"
-																		}
-																		className="font-medium flex align-items-center gap-2"
-																	>
-																		<Icon
-																			icon="fluent:table-add-20-regular"
-																			width="24"
-																			height="24"
-																		/>
-																		Add
-																	</Link>
-																	<Ripple />
-																</span>
-															</li>
-															<li>
-																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																	<Link
-																		to={
-																			"/admin/faculty/view"
-																		}
-																		className="font-medium flex align-items-center gap-2"
-																	>
-																		<Icon
-																			icon="fluent:table-search-20-regular"
-																			width="24"
-																			height="24"
-																		/>
-																		View
-																	</Link>
-																	<Ripple />
-																</span>
-															</li>
-														</ul>
+																<Icon
+																	icon="fluent:table-add-20-regular"
+																	width="24"
+																	height="24"
+																/>
+																Add
+															</Link>
+															<Ripple />
+														</span>
 													</li>
 													<li>
-														<StyleClass
-															nodeRef={btnRef3}
-															selector="@next"
-															enterFromClassName="hidden"
-															enterActiveClassName="slidedown"
-															leaveToClassName="hidden"
-															leaveActiveClassName="slideup"
-														>
-															<span
-																ref={btnRef3}
-																className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+														<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+															<Link
+																to={
+																	"/admin/viewUsers"
+																}
+																className="font-medium flex align-items-center gap-2"
 															>
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="ph:student"
-																		width="24"
-																		height="24"
-																	/>
-																	Students
-																</span>
-																<i className="pi pi-chevron-down ml-auto mr-1"></i>
-																<Ripple />
-															</span>
-														</StyleClass>
-														<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
-															<li>
-																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																	<Link
-																		to={
-																			"/admin/student/add"
-																		}
-																		className="font-medium flex align-items-center gap-2"
-																	>
-																		<Icon
-																			icon="fluent:table-add-20-regular"
-																			width="24"
-																			height="24"
-																		/>
-																		Add
-																	</Link>
-																	<Ripple />
-																</span>
-															</li>
-															<li>
-																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																	<Link
-																		to={
-																			"/admin/student/view"
-																		}
-																		className="font-medium flex align-items-center gap-2"
-																	>
-																		<Icon
-																			icon="fluent:table-search-20-regular"
-																			width="24"
-																			height="24"
-																		/>
-																		View
-																	</Link>
-																	<Ripple />
-																</span>
-															</li>
-														</ul>
+																<Icon
+																	icon="fluent:table-search-20-regular"
+																	width="24"
+																	height="24"
+																/>
+																View
+															</Link>
+															<Ripple />
+														</span>
 													</li>
 												</ul>
 											</li>
