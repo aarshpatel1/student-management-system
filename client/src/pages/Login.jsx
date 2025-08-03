@@ -162,8 +162,11 @@ function Login() {
 
 					<div className="flex mt-3 justify-content-center">
 						Don't have an account?
-						<a href="/signup" className="ml-2 font-bold">
-							Sign Up
+						<a
+							href="/signup"
+							className="ml-2 font-bold hover:underline"
+						>
+							Signup
 						</a>
 					</div>
 				</form>

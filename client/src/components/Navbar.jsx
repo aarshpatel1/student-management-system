@@ -9,6 +9,7 @@ import { isAuthenticated } from "../utils/auth";
 import { Menu } from "primereact/menu";
 import axios from "axios";
 import api from "../../config/axiosConfig";
+import SidebarMenus from "./SidebarMenus";
 
 export default function Navbar() {
 	const menuRight = useRef(null);
@@ -209,12 +210,15 @@ export default function Navbar() {
 	];
 
 	const start = (
-		<img
-			alt="logo"
-			src="https://primefaces.org/cdn/primereact/images/logo.png"
-			height="40"
-			className="mr-2"
-		></img>
+		<div className="flex align-items-center gap-2">
+			<SidebarMenus />
+			<img
+				alt="logo"
+				src="https://primefaces.org/cdn/primereact/images/logo.png"
+				height="40"
+				className="mr-2"
+			></img>
+		</div>
 	);
 	const end = (
 		<div className="flex align-items-center gap-2">

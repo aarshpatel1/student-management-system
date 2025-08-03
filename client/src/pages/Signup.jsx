@@ -212,7 +212,7 @@ function Signup() {
 
 					<div className="flex mt-3 justify-content-center">
 						Already have an account?
-						<a href="/login" className="ml-2 font-bold">
+						<a href="/login" className="ml-2 font-bold hover:underline">
 							Login
 						</a>
 					</div>
