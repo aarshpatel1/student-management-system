@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Avatar } from "primereact/avatar";
@@ -6,6 +6,10 @@ import { Ripple } from "primereact/ripple";
 import { StyleClass } from "primereact/styleclass";
 import { Icon } from "@iconify-icon/react";
 import LogoSVG from "./LogoSVG";
+import { Link } from "react-router";
+import { isAuthenticated } from "../utils/auth";
+import axios from "axios";
+import api from "../../config/axiosConfig";
 
 export default function SidebarMenus() {
 	const [visible, setVisible] = useState(false);
@@ -13,6 +17,69 @@ export default function SidebarMenus() {
 	const btnRef2 = useRef(null);
 	const btnRef3 = useRef(null);
 	const btnRef4 = useRef(null);
+
+	const [currentUser, setCurrentUser] = useState({});
+
+	useEffect(() => {
+		// Check authentication when component mounts
+		const checkAndLoadUser = () => {
+			if (isAuthenticated()) {
+				const token = localStorage.getItem("token");
+				if (token) {
+					try {
+						const base64Url = token.split(".")[1];
+						const base64 = base64Url
+							.replace(/-/g, "+")
+							.replace(/_/g, "/");
+						const jsonPayload = decodeURIComponent(
+							atob(base64)
+								.split("")
+								.map(function (c) {
+									return (
+										"%" +
+										(
+											"00" + c.charCodeAt(0).toString(16)
+										).slice(-2)
+									);
+								})
+								.join("")
+						);
+						const payload = JSON.parse(jsonPayload);
+						const userId = payload.id;
+						axios.defaults.headers.common[
+							"Authorization"
+						] = `Bearer ${token}`;
+						fetchCurrentUser(token, userId);
+					} catch (err) {
+						console.error("Error decoding token:", err);
+					}
+				}
+			} else {
+				setCurrentUser({});
+			}
+		};
+
+		// Initial check when component mounts
+		checkAndLoadUser();
+	}, []);
+
+	const fetchCurrentUser = async (token, userId) => {
+		try {
+			const response = await api.get(`/user/getUser/${userId}`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			// console.log("Current User:", response.data);
+			setCurrentUser(response.data.user);
+		} catch (error) {
+			console.error("Error fetching current user:", error);
+		}
+	};
+
+	const toTitleCase = (str) => {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	};
 
 	return (
 		<div className="card flex justify-content-center">
@@ -31,7 +98,7 @@ export default function SidebarMenus() {
 									<span className="inline-flex align-items-center gap-2">
 										<LogoSVG />
 										<span className="font-semibold text-2xl text-primary">
-											Admin
+											{toTitleCase(currentUser.role)}
 										</span>
 									</span>
 									<span>
@@ -47,171 +114,167 @@ export default function SidebarMenus() {
 									</span>
 								</div>
 								<div className="overflow-y-auto">
-									<ul className="list-none p-3 m-0">
-										<li>
-											<StyleClass
-												nodeRef={btnRef1}
-												selector="@next"
-												enterFromClassName="hidden"
-												enterActiveClassName="slidedown"
-												leaveToClassName="hidden"
-												leaveActiveClassName="slideup"
-											>
-												<div
-													ref={btnRef1}
-													className="p-ripple p-3 flex align-items-center justify-content-between text-600 cursor-pointer"
+									{currentUser.role === "admin" && (
+										<ul className="list-none p-3 m-0">
+											<li>
+												<StyleClass
+													nodeRef={btnRef1}
+													selector="@next"
+													enterFromClassName="hidden"
+													enterActiveClassName="slidedown"
+													leaveToClassName="hidden"
+													leaveActiveClassName="slideup"
 												>
-													<span className="font-medium flex align-items-center gap-2">
-														<Icon
-															icon="ix:user-management-settings"
-															width="24"
-															height="24"
-														/>
-														Manage Users
-													</span>
-													<i className="pi pi-chevron-down"></i>
-													<Ripple />
-												</div>
-											</StyleClass>
+													<div
+														ref={btnRef1}
+														className="p-ripple p-3 flex align-items-center justify-content-between text-600 cursor-pointer"
+													>
+														<span className="font-medium flex align-items-center gap-2">
+															<Icon
+																icon="ix:user-management-settings"
+																width="24"
+																height="24"
+															/>
+															Manage Users
+														</span>
+														<i className="pi pi-chevron-down"></i>
+														<Ripple />
+													</div>
+												</StyleClass>
 
-											<ul className="list-none p-0 m-0 overflow-hidden pl-3	">
-												<li>
-													<StyleClass
-														nodeRef={btnRef2}
-														selector="@next"
-														enterFromClassName="hidden"
-														enterActiveClassName="slidedown"
-														leaveToClassName="hidden"
-														leaveActiveClassName="slideup"
-													>
-														<a
-															ref={btnRef2}
-															className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+												<ul className="list-none p-0 m-0 overflow-hidden pl-3	">
+													<li>
+														<StyleClass
+															nodeRef={btnRef2}
+															selector="@next"
+															enterFromClassName="hidden"
+															enterActiveClassName="slidedown"
+															leaveToClassName="hidden"
+															leaveActiveClassName="slideup"
 														>
-															<span className="font-medium flex align-items-center gap-2">
-																<Icon
-																	icon="streamline-plump:class-lesson"
-																	width="24"
-																	height="24"
-																/>
-																Faculties
+															<span
+																ref={btnRef2}
+																className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+															>
+																<span className="font-medium flex align-items-center gap-2">
+																	<Icon
+																		icon="streamline-plump:class-lesson"
+																		width="24"
+																		height="24"
+																	/>
+																	Faculties
+																</span>
+																<i className="pi pi-chevron-down ml-auto mr-1"></i>
+																<Ripple />
 															</span>
-															<i className="pi pi-chevron-down ml-auto mr-1"></i>
-															<Ripple />
-														</a>
-													</StyleClass>
-													<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-add-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	Add
+														</StyleClass>
+														<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
+															<li>
+																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+																	<Link
+																		to={
+																			"/admin/faculty/add"
+																		}
+																		className="font-medium flex align-items-center gap-2"
+																	>
+																		<Icon
+																			icon="fluent:table-add-20-regular"
+																			width="24"
+																			height="24"
+																		/>
+																		Add
+																	</Link>
+																	<Ripple />
 																</span>
-																<Ripple />
-															</a>
-														</li>
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-search-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	View
+															</li>
+															<li>
+																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+																	<Link
+																		to={
+																			"/admin/faculty/view"
+																		}
+																		className="font-medium flex align-items-center gap-2"
+																	>
+																		<Icon
+																			icon="fluent:table-search-20-regular"
+																			width="24"
+																			height="24"
+																		/>
+																		View
+																	</Link>
+																	<Ripple />
 																</span>
-																<Ripple />
-															</a>
-														</li>
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-edit-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	Edit
-																</span>
-																<Ripple />
-															</a>
-														</li>
-													</ul>
-												</li>
-												<li>
-													<StyleClass
-														nodeRef={btnRef3}
-														selector="@next"
-														enterFromClassName="hidden"
-														enterActiveClassName="slidedown"
-														leaveToClassName="hidden"
-														leaveActiveClassName="slideup"
-													>
-														<a
-															ref={btnRef3}
-															className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+															</li>
+														</ul>
+													</li>
+													<li>
+														<StyleClass
+															nodeRef={btnRef3}
+															selector="@next"
+															enterFromClassName="hidden"
+															enterActiveClassName="slidedown"
+															leaveToClassName="hidden"
+															leaveActiveClassName="slideup"
 														>
-															<span className="font-medium flex align-items-center gap-2">
-																<Icon
-																	icon="ph:student"
-																	width="24"
-																	height="24"
-																/>
-																Students
+															<span
+																ref={btnRef3}
+																className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full"
+															>
+																<span className="font-medium flex align-items-center gap-2">
+																	<Icon
+																		icon="ph:student"
+																		width="24"
+																		height="24"
+																	/>
+																	Students
+																</span>
+																<i className="pi pi-chevron-down ml-auto mr-1"></i>
+																<Ripple />
 															</span>
-															<i className="pi pi-chevron-down ml-auto mr-1"></i>
-															<Ripple />
-														</a>
-													</StyleClass>
-													<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-add-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	Add
+														</StyleClass>
+														<ul className="list-none py-0 pl-3 pr-0 m-0 hidden overflow-y-hidden transition-all transition-duration-400 transition-ease-in-out">
+															<li>
+																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+																	<Link
+																		to={
+																			"/admin/student/add"
+																		}
+																		className="font-medium flex align-items-center gap-2"
+																	>
+																		<Icon
+																			icon="fluent:table-add-20-regular"
+																			width="24"
+																			height="24"
+																		/>
+																		Add
+																	</Link>
+																	<Ripple />
 																</span>
-																<Ripple />
-															</a>
-														</li>
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-search-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	View
+															</li>
+															<li>
+																<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+																	<Link
+																		to={
+																			"/admin/student/view"
+																		}
+																		className="font-medium flex align-items-center gap-2"
+																	>
+																		<Icon
+																			icon="fluent:table-search-20-regular"
+																			width="24"
+																			height="24"
+																		/>
+																		View
+																	</Link>
+																	<Ripple />
 																</span>
-																<Ripple />
-															</a>
-														</li>
-														<li>
-															<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
-																<span className="font-medium flex align-items-center gap-2">
-																	<Icon
-																		icon="fluent:table-edit-20-regular"
-																		width="24"
-																		height="24"
-																	/>
-																	Edit
-																</span>
-																<Ripple />
-															</a>
-														</li>
-													</ul>
-												</li>
-											</ul>
-										</li>
-									</ul>
+															</li>
+														</ul>
+													</li>
+												</ul>
+											</li>
+										</ul>
+									)}
 									<ul className="list-none p-3 m-0">
 										<li>
 											<StyleClass
@@ -235,25 +298,25 @@ export default function SidebarMenus() {
 											</StyleClass>
 											<ul className="list-none p-0 m-0 overflow-hidden">
 												<li>
-													<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-folder mr-2"></i>
 														<span className="font-medium">
 															Projects
 														</span>
 														<Ripple />
-													</a>
+													</span>
 												</li>
 												<li>
-													<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-chart-bar mr-2"></i>
 														<span className="font-medium">
 															Performance
 														</span>
 														<Ripple />
-													</a>
+													</span>
 												</li>
 												<li>
-													<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-comments mr-2"></i>
 														<span className="font-medium">
 															Messages
@@ -269,25 +332,25 @@ export default function SidebarMenus() {
 															3
 														</span>
 														<Ripple />
-													</a>
+													</span>
 												</li>
 												<li>
-													<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-calendar mr-2"></i>
 														<span className="font-medium">
 															Calendar
 														</span>
 														<Ripple />
-													</a>
+													</span>
 												</li>
 												<li>
-													<a className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
+													<span className="p-ripple flex align-items-center cursor-pointer p-3 border-round text-700 hover:surface-100 transition-duration-150 transition-colors w-full">
 														<i className="pi pi-cog mr-2"></i>
 														<span className="font-medium">
 															Settings
 														</span>
 														<Ripple />
-													</a>
+													</span>
 												</li>
 											</ul>
 										</li>
@@ -295,15 +358,34 @@ export default function SidebarMenus() {
 								</div>
 								<div className="mt-auto">
 									<hr className="mb-3 mx-3 border-top-1 border-none surface-border" />
-									<a className="m-3 flex align-items-center cursor-pointer p-3 gap-2 border-round text-700 hover:surface-100 transition-duration-150 transition-colors p-ripple">
+									<span className="m-3 flex align-items-center cursor-pointer p-3 gap-2 border-round text-700 hover:surface-100 transition-duration-150 transition-colors p-ripple">
 										<Avatar
-											image="https://primefaces.org/cdn/primereact/images/avatar/amyelsner.png"
+											image={
+												currentUser.profilePhoto &&
+												currentUser.profilePhoto.url
+													? currentUser.profilePhoto
+															.url
+													: ""
+											}
+											alt={`${
+												currentUser.firstName
+													? currentUser.firstName
+													: ""
+											}'s profile`}
 											shape="circle"
+											size="large"
+											className="ml-2"
+											onClick={(event) =>
+												menuRight.current.toggle(event)
+											}
+											aria-controls="popup_menu_right"
+											aria-haspopup
 										/>
-										<span className="font-bold">
-											Amy Elsner
+										<span className="font-bold ml-3">
+											{currentUser.firstName}{" "}
+											{currentUser.lastName}
 										</span>
-									</a>
+									</span>
 								</div>
 							</div>
 						</div>

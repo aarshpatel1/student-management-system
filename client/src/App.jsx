@@ -1,13 +1,24 @@
-import { ScrollTop } from "primereact/scrolltop";
 import { BrowserRouter, Routes, Route } from "react-router";
 
+// general
 import Navbar from "./components/Navbar";
-
 import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+
+// admin
 import PrivateRoute from "./components/PrivateRoute";
+import Dashboard from "./pages/Dashboard";
+
+// faculty
+import AddFaculty from "./pages/Faculty/AddFaculty";
+import EditFaculty from "./pages/Faculty/EditFaculty";
+import ViewFaculties from "./pages/Faculty/ViewFaculties";
+
+// student
+import AddStudent from "./pages/Student/AddStudent";
+import EditStudent from "./pages/Student/EditStudent";
+import ViewStudents from "./pages/Student/ViewStudents";
 
 export default function App() {
 	return (
@@ -17,10 +28,39 @@ export default function App() {
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route
-						path="/dashboard"
+						path="/admin/*"
 						element={
 							<PrivateRoute>
-								<Dashboard />
+								<Routes>
+									<Route
+										path="dashboard"
+										element={<Dashboard />}
+									/>
+									<Route
+										path="faculty/add"
+										element={<AddFaculty />}
+									/>
+									<Route
+										path="faculty/edit/:id"
+										element={<EditFaculty />}
+									/>
+									<Route
+										path="faculty/view"
+										element={<ViewFaculties />}
+									/>
+									<Route
+										path="student/add"
+										element={<AddStudent />}
+									/>
+									<Route
+										path="student/edit/:id"
+										element={<EditStudent />}
+									/>
+									<Route
+										path="student/view"
+										element={<ViewStudents />}
+									/>
+								</Routes>
 							</PrivateRoute>
 						}
 					/>
@@ -28,13 +68,6 @@ export default function App() {
 					<Route path="/signup" element={<Signup />} />
 				</Routes>
 			</BrowserRouter>
-
-			<ScrollTop
-				target="parent"
-				threshold={100}
-				className="w-2rem h-2rem border-round bg-primary"
-				icon="pi pi-arrow-up text-base"
-			/>
 		</>
 	);
 }

@@ -205,13 +205,13 @@ export default function Navbar() {
 		{
 			label: "Dashboard",
 			icon: "pi pi-chart-bar",
-			url: "/dashboard",
+			url: "/admin/dashboard",
 		},
 	];
 
 	const start = (
 		<div className="flex align-items-center gap-2">
-			<SidebarMenus />
+			{isAuthenticated() && <SidebarMenus />}
 			<img
 				alt="logo"
 				src="https://primefaces.org/cdn/primereact/images/logo.png"
@@ -231,7 +231,7 @@ export default function Navbar() {
 			/>
 			{!isAuthenticated() ? (
 				<>
-					{!isSmallScreen && (
+					{/* {!isSmallScreen && (
 						<Link
 							to="/signup"
 							rel="noopener noreferrer"
@@ -239,7 +239,7 @@ export default function Navbar() {
 						>
 							Signup
 						</Link>
-					)}
+					)} */}
 					<Link
 						to="/login"
 						rel="noopener noreferrer"
