@@ -138,6 +138,8 @@ export const getUser = async (req, res) => {
 
 export const addUser = async (req, res) => {
 	try {
+		console.log("Request body:", req.body);
+		console.log("Request file:", req.file);
 		let checkUser = await Users.findOne({ email: req.body.email });
 
 		if (checkUser) {

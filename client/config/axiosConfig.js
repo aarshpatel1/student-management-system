@@ -11,16 +11,26 @@ const api = axios.create({
 
 export const authAPI = {
 	signup: (userData) => api.post("/auth/signup", userData),
+
 	login: (credentials) => api.post("/auth/login", credentials),
 };
 
 export const userAPI = {
-	getAll: () => api.get("/user/getAllUsers"),
+	getAll: (params = {}) => api.get("/user/getAllUsers", { params }),
+
 	getById: (id) => api.get(`/user/getUser/${id}`),
-	create: (userData) => api.post("/user/addUser", userData),
-	update: (id, userData) => api.put(`/user/updateUser/${id}`, userData),
-	update: (id, userData) => api.patch(`/user/updateUser/${id}`, userData),
-	delete: (id) => api.delete(`/user/deleteUser/${id}`),
+
+	create: (data, headers = {}) =>
+		api.post("/user/addUser", data, { headers }),
+
+	update: (id, data, headers = {}) =>
+		api.put(`/user/updateUser/${id}`, data, { headers }),
+
+	patch: (id, data, headers = {}) =>
+		api.patch(`/user/updateUser/${id}`, data, { headers }),
+
+	delete: (id, headers = {}) =>
+		api.delete(`/user/deleteUser/${id}`, { headers }),
 };
 
 export default api;

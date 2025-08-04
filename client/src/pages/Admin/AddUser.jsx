@@ -1,11 +1,15 @@
 import React, { useRef, useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { RadioButton } from "primereact/radiobutton";
+import { FileUpload } from "primereact/fileupload";
 import { Dropdown } from "primereact/dropdown";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { Toast } from "primereact/toast";
 import { useAuth } from "../../contexts/AuthContext";
+import { userAPI } from "../../../config/axiosConfig";
+import axios, { isAxiosError } from "axios";
+import { validateUserForm, stringUtils } from "../../utils/ValidationUtils";
 
 export default function AddUser() {
 	const toast = useRef(null);
@@ -15,8 +19,9 @@ export default function AddUser() {
 	const [gender, setGender] = useState("");
 	const [role, setRole] = useState("");
 	const [selectedCity, setSelectedCity] = useState(null);
+	const [profilePhoto, setProfilePhoto] = useState(null);
 
-	const { currentUser, isAuth, logout } = useAuth();
+	const { currentUser, isAuth } = useAuth();
 
 	const cities = [
 		{ name: "New York", code: "NY" },
@@ -31,125 +36,116 @@ export default function AddUser() {
 		setData({ ...data, [name]: value });
 	};
 
-	const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
-	const lowerCaseRegex = /[a-z]/;
-	const upperCaseRegex = /[A-Z]/;
-	const numberRegex = /[0-9]/;
-	const specialCharacterRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+	const handleFileUpload = (e) => {
+		if (e.files && e.files.length > 0) {
+			setProfilePhoto(e.files[0]);
+			if (validationErrors.field === "profilePhoto") {
+				setValidationErrors({});
+			}
+		}
+	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setLoading(true);
 
 		console.log(data);
 
-		if (!data.email) {
-			setValidationErrors({
-				field: "email",
-				errorMessage: "Please enter a valid email address.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!data.password) {
-			setValidationErrors({
-				field: "password",
-				errorMessage: "Please enter a strong password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!data.confirmPassword) {
-			setValidationErrors({
-				field: "confirmPassword",
-				errorMessage:
-					"Please enter the same password as Password field.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!emailRegex.test(data.email)) {
-			setValidationErrors({
-				field: "email",
-				errorMessage: "There should be a valid email address.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!lowerCaseRegex.test(data.password)) {
-			setValidationErrors({
-				field: "password",
-				errorMessage:
-					"There should be a lowercase character in the password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!upperCaseRegex.test(data.password)) {
-			setValidationErrors({
-				field: "password",
-				errorMessage:
-					"There should be an UPPERCASE character in the password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!numberRegex.test(data.password)) {
-			setValidationErrors({
-				field: "password",
-				errorMessage:
-					"There should be a Number character in the password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (!specialCharacterRegex.test(data.password)) {
-			setValidationErrors({
-				field: "password",
-				errorMessage:
-					"There should be a Special character in the password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (data.password.length < 8) {
-			setValidationErrors({
-				field: "password",
-				errorMessage:
-					"There should be atleast 8 characters in the password.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		if (data.password !== data.confirmPassword) {
-			setValidationErrors({
-				field: "confirmPassword",
-				errorMessage:
-					"Passwor and the Confirm Password should be the same.",
-			});
-			setLoading(false);
-			return;
-		}
-
-		setLoading(false);
-		setData({});
-		setValidationErrors({});
-
-		toast.current.show({
-			severity: "success",
-			summary: "Success",
-			detail: "Signup Successfully",
-			life: 3000,
+		// Use the validation utility
+		const validationError = validateUserForm(data, {
+			gender,
+			role,
+			selectedCity,
+			profilePhoto,
+			currentUser,
 		});
+
+		if (validationError) {
+			setValidationErrors(validationError);
+			setLoading(false);
+			return;
+		}
+
+		try {
+			const token = localStorage.getItem("token");
+
+			const formData = new FormData();
+			formData.append(
+				"firstName",
+				stringUtils.toTitleCase(data.firstName.trim())
+			);
+			formData.append(
+				"lastName",
+				stringUtils.toTitleCase(data.lastName.trim())
+			);
+			formData.append("mobileNumber", data.mobileNumber.trim());
+			formData.append("email", data.email.toLowerCase().trim());
+			formData.append("password", data.password.trim());
+			formData.append("address", data.address.trim());
+			formData.append("gender", gender);
+			formData.append("role", role);
+			formData.append("city", selectedCity?.name || "");
+			formData.append("profilePhoto", profilePhoto);
+
+			console.log("Sending form data...");
+
+			const response = await userAPI.create(formData, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "multipart/form-data",
+				},
+			});
+
+			console.log("User created successfully:", response.data);
+			toast.current.show({
+				severity: "success",
+				summary: "Success",
+				detail: "User Added Successfully",
+				life: 3000,
+			});
+
+			// Reset form
+			setData({});
+			setGender("");
+			setRole("");
+			setSelectedCity(null);
+			setProfilePhoto(null);
+			setValidationErrors({});
+		} catch (err) {
+			console.error("Error creating user:", err);
+
+			if (isAxiosError(err)) {
+				const res = err.response;
+
+				if (res && res.data) {
+					const field = res.data.field;
+					const message = res.data.message;
+
+					if (field) {
+						setValidationErrors({
+							field,
+							errorMessage: message || "Error creating user.",
+						});
+					} else {
+						toast.current.show({
+							severity: "error",
+							summary: "Error",
+							detail: message || "Error creating user.",
+							life: 3000,
+						});
+					}
+				} else {
+					toast.current.show({
+						severity: "error",
+						summary: "Error",
+						detail: "Error creating user.",
+						life: 3000,
+					});
+				}
+			}
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
@@ -162,6 +158,7 @@ export default function AddUser() {
 				<form
 					className="border-round-lg px-5 py-5 shadow-2 w-full sm:w-8 md:w-6 lg:w-4 xl:w-3"
 					onSubmit={handleSubmit}
+					encType="multipart/form-data"
 				>
 					<div className="flex flex-column gap-2">
 						<label htmlFor="firstName">First Name</label>
@@ -251,7 +248,6 @@ export default function AddUser() {
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="mobileNumber">Mobile Number</label>
 						<InputText
-							type="tel"
 							keyfilter="pint"
 							id="mobileNumber"
 							name="mobileNumber"
@@ -409,6 +405,26 @@ export default function AddUser() {
 							</div>
 						</div>
 						{validationErrors.field === "role" ? (
+							<Message
+								severity="error"
+								text={validationErrors.errorMessage}
+							/>
+						) : (
+							""
+						)}
+					</div>
+					<div className="flex flex-column gap-2 mt-4">
+						<label htmlFor="profilePhoto">Profile Photo</label>
+						<FileUpload
+							mode="basic"
+							name="profilePhoto"
+							accept="image/*"
+							maxFileSize={1000000}
+							onSelect={handleFileUpload}
+							auto={false}
+							chooseLabel="Choose Photo"
+						/>
+						{validationErrors.field === "profilePhoto" ? (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
