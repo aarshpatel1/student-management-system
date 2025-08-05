@@ -14,6 +14,7 @@ import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
 import { FilterMatchMode, FilterOperator } from "primereact/api";
+import axios from "axios";
 
 export default function ManageUser() {
 	let emptyUser = {
@@ -50,24 +51,47 @@ export default function ManageUser() {
 	const toast = useRef(null);
 	const dt = useRef(null);
 
+	const token = localStorage.getItem("token");
+
 	useEffect(() => {
 		// Simulate API call
-		setUsers([
-			{
-				id: "u1",
-				name: "Alice",
-				email: "alice@example.com",
-				role: "Admin",
-				status: "active",
-			},
-			{
-				id: "u2",
-				name: "Bob",
-				email: "bob@example.com",
-				role: "User",
-				status: "inactive",
-			},
-		]);
+
+		const fetchAllUsers = async () => {
+			try {
+				const response = await axios.get(
+					"http://127.0.0.1:8000/api/user/allUsers",
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				console.log("Fetched users:", response.data);
+				setUsers(response.data.data);
+			} catch (err) {
+				console.error("Error fetching users:", err);
+			}
+		};
+
+		fetchAllUsers();
+
+		// setUsers([
+		// 	{
+		// 		id: "u1",
+		// 		name: "Alice",
+		// 		email: "alice@example.com",
+		// 		role: "Admin",
+		// 		status: "active",
+		// 	},
+		// 	{
+		// 		id: "u2",
+		// 		name: "Bob",
+		// 		email: "bob@example.com",
+		// 		role: "User",
+		// 		status: "inactive",
+		// 	},
+		// ]);
 	}, []);
 
 	const openNew = () => {
@@ -218,8 +242,8 @@ export default function ManageUser() {
 
 	const statusBodyTemplate = (rowData) => (
 		<Tag
-			value={rowData.status}
-			severity={rowData.status === "active" ? "success" : "danger"}
+			value={rowData.status ? "Active" : "Inactive"}
+			severity={rowData.status ? "success" : "danger"}
 		></Tag>
 	);
 
@@ -284,7 +308,7 @@ export default function ManageUser() {
 	);
 
 	return (
-		<div className="my-4 mx-6">
+		<div className="lg:my-4 lg:mx-6">
 			<Toast ref={toast} />
 			<div className="card">
 				<Toolbar
@@ -297,7 +321,7 @@ export default function ManageUser() {
 					value={users}
 					selection={selectedUsers}
 					onSelectionChange={(e) => setSelectedUsers(e.value)}
-					dataKey="id"
+					dataKey="_id"
 					paginator
 					rows={10}
 					rowsPerPageOptions={[5, 10, 25]}
@@ -318,6 +342,11 @@ export default function ManageUser() {
 						sortable
 						filter
 						filterPlaceholder="Search by name"
+						body={(rowData) =>
+							`${rowData.firstName || ""} ${
+								rowData.lastName || ""
+							}`.trim()
+						}
 					/>
 					<Column
 						field="email"
@@ -359,23 +388,46 @@ export default function ManageUser() {
 				onHide={hideDialog}
 			>
 				<div className="field">
-					<label htmlFor="name" className="font-bold">
-						Name
+					<label htmlFor="firstName" className="font-bold">
+						First Name
 					</label>
 					<InputText
-						id="name"
-						value={user.name}
+						id="firstName"
+						value={user.firstName || ""}
 						onChange={(e) =>
-							setUser({ ...user, name: e.target.value })
+							setUser({ ...user, firstName: e.target.value })
 						}
 						required
 						autoFocus
 						className={classNames({
-							"p-invalid": submitted && !user.name,
+							"p-invalid": submitted && !user.firstName,
 						})}
 					/>
-					{submitted && !user.name && (
-						<small className="p-error">Name is required.</small>
+					{submitted && !user.firstName && (
+						<small className="p-error">
+							First name is required.
+						</small>
+					)}
+				</div>
+				<div className="field">
+					<label htmlFor="lastName" className="font-bold">
+						Last Name
+					</label>
+					<InputText
+						id="lastName"
+						value={user.lastName || ""}
+						onChange={(e) =>
+							setUser({ ...user, lastName: e.target.value })
+						}
+						required
+						className={classNames({
+							"p-invalid": submitted && !user.lastName,
+						})}
+					/>
+					{submitted && !user.lastName && (
+						<small className="p-error">
+							Last name is required.
+						</small>
 					)}
 				</div>
 				<div className="field">
@@ -421,7 +473,13 @@ export default function ManageUser() {
 					/>
 					{user && (
 						<span>
-							Are you sure you want to delete <b>{user.name}</b>?
+							Are you sure you want to delete{" "}
+							<b>
+								{`${user.firstName || ""} ${
+									user.lastName || ""
+								}`.trim()}
+							</b>
+							?
 						</span>
 					)}
 				</div>
