@@ -230,23 +230,72 @@ export default function ManageUser() {
 		</div>
 	);
 
-	const exportColumns = allColumns.map((col) => ({
-		title: col.header,
-		dataKey: col.field,
-	}));
+	const exportColumns = visibleColumns
+		.map((col) => {
+			if (col.field === "name") {
+				return [
+					{ title: "First Name", dataKey: "firstName" },
+					{ title: "Last Name", dataKey: "lastName" },
+				];
+			}
+			return { title: col.header, dataKey: col.field };
+		})
+		.flat();
+
+	// Ensure the email column is always included
+	if (!exportColumns.some((col) => col.dataKey === "email")) {
+		exportColumns.unshift({ title: "Email", dataKey: "email" });
+	}
+
+	const exportData = users.map((user) => {
+		const row = {};
+		visibleColumns.forEach((col) => {
+			if (col.field === "name") {
+				row["firstName"] = user.firstName || "";
+				row["lastName"] = user.lastName || "";
+			} else {
+				row[col.field] = user[col.field];
+			}
+		});
+
+		// Ensure email is always included
+		row["email"] = user.email || "";
+
+		return row;
+	});
 
 	const exportCSV = (selectionOnly) => {
-		dt.current.exportCSV({ selectionOnly });
+		const dataToExport = selectionOnly
+			? selectedUsers.map((user) =>
+					exportData.find((u) => u.id === user.id)
+			  )
+			: exportData;
+
+		// Convert data to CSV format
+		const csvContent = [
+			exportColumns.map((col) => col.title).join(","), // Header row
+			...dataToExport.map((row) =>
+				exportColumns.map((col) => row[col.dataKey] || "").join(",")
+			),
+		].join("\n");
+
+		// Trigger download
+		const blob = new Blob([csvContent], {
+			type: "text/csv;charset=utf-8;",
+		});
+		const link = document.createElement("a");
+		link.href = URL.createObjectURL(blob);
+		link.download = "users_export.csv";
+		link.click();
 	};
 
 	const exportPdf = () => {
 		import("jspdf").then((jsPDF) => {
 			import("jspdf-autotable").then(() => {
 				const doc = new jsPDF.default(0, 0);
-
 				autoTable(doc, {
 					columns: exportColumns,
-					body: users,
+					body: exportData,
 				});
 				doc.save("users.pdf");
 			});
@@ -255,7 +304,7 @@ export default function ManageUser() {
 
 	const exportExcel = () => {
 		import("xlsx").then((xlsx) => {
-			const worksheet = xlsx.utils.json_to_sheet(users);
+			const worksheet = xlsx.utils.json_to_sheet(exportData);
 			const workbook = {
 				Sheets: { data: worksheet },
 				SheetNames: ["data"],
@@ -265,7 +314,7 @@ export default function ManageUser() {
 				type: "array",
 			});
 
-			saveAsExcelFile(excelBuffer, "products");
+			saveAsExcelFile(excelBuffer, "users");
 		});
 	};
 
