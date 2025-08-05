@@ -297,10 +297,21 @@ export default function ManageUser() {
 		import("jspdf").then((jsPDF) => {
 			import("jspdf-autotable").then(() => {
 				const doc = new jsPDF.default(0, 0);
+
+				// Add a header to the PDF
+				doc.setFontSize(16);
+				doc.text("User Management Report", 14, 20); // Title text at (x: 14, y: 20)
+
+				// Add the table below the header
 				autoTable(doc, {
-					columns: exportColumns,
-					body: exportData,
+					startY: 30, // Start the table below the header
+					head: [exportColumns.map((col) => col.title)], // Table headers
+					body: exportData.map((row) =>
+						exportColumns.map((col) => row[col.dataKey] || "")
+					), // Table data
 				});
+
+				// Save the PDF
 				doc.save("users.pdf");
 			});
 		});
