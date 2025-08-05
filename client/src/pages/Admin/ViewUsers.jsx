@@ -230,17 +230,24 @@ export default function ManageUser() {
 		</div>
 	);
 
-	const exportColumns = visibleColumns
-		.map((col) => {
-			if (col.field === "name") {
-				return [
-					{ title: "First Name", dataKey: "firstName" },
-					{ title: "Last Name", dataKey: "lastName" },
-				];
-			}
-			return { title: col.header, dataKey: col.field };
-		})
-		.flat();
+	const exportColumns = [
+		{ title: "Email", dataKey: "email" }, // Ensure email is always the first column
+		...visibleColumns
+			.map((col) => {
+				if (col.field === "name") {
+					return [
+						{ title: "First Name", dataKey: "firstName" },
+						{ title: "Last Name", dataKey: "lastName" },
+					];
+				}
+				if (col.field !== "email") {
+					return { title: col.header, dataKey: col.field };
+				}
+				return null;
+			})
+			.flat()
+			.filter(Boolean), // Remove null values
+	];
 
 	// Ensure the email column is always included
 	if (!exportColumns.some((col) => col.dataKey === "email")) {
@@ -249,18 +256,15 @@ export default function ManageUser() {
 
 	const exportData = users.map((user) => {
 		const row = {};
+		row["email"] = user.email || "";
 		visibleColumns.forEach((col) => {
 			if (col.field === "name") {
 				row["firstName"] = user.firstName || "";
 				row["lastName"] = user.lastName || "";
-			} else {
+			} else if (col.field !== "email") {
 				row[col.field] = user[col.field];
 			}
 		});
-
-		// Ensure email is always included
-		row["email"] = user.email || "";
-
 		return row;
 	});
 
