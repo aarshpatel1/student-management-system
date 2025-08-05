@@ -1,8 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { RadioButton } from "primereact/radiobutton";
-import { FileUpload } from "primereact/fileupload";
-import { Dropdown } from "primereact/dropdown";
+import { AutoComplete } from "primereact/autocomplete";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { Toast } from "primereact/toast";
@@ -13,35 +12,60 @@ import { validateUserForm, stringUtils } from "../../utils/ValidationUtils";
 
 export default function AddUser() {
 	const toast = useRef(null);
-	const [data, setData] = useState({});
 	const [loading, setLoading] = useState(false);
-	const [validationErrors, setValidationErrors] = useState({});
+	const [fetchCities, setFetchCities] = useState([]);
+
+	const [data, setData] = useState({});
 	const [gender, setGender] = useState("");
+
 	const [role, setRole] = useState("");
-	const [selectedCity, setSelectedCity] = useState(null);
 	const [profilePhoto, setProfilePhoto] = useState(null);
+	const [profilePreview, setProfilePreview] = useState(null);
+
+	const [validationErrors, setValidationErrors] = useState({});
 
 	const { currentUser, isAuth } = useAuth();
 
-	const cities = [
-		{ name: "New York", code: "NY" },
-		{ name: "Rome", code: "RM" },
-		{ name: "London", code: "LDN" },
-		{ name: "Istanbul", code: "IST" },
-		{ name: "Paris", code: "PRS" },
-	];
+	const searchCities = (e) => {
+		var config = {
+			method: "post",
+			maxBodyLength: Infinity,
+			url: "https://countriesnow.space/api/v0.1/countries/cities",
+			headers: {},
+			data: {
+				country: "India",
+			},
+		};
+
+		axios(config)
+			.then(function (response) {
+				console.log(JSON.stringify(response.data));
+				// Filter cities based on user input
+				const filteredCities = response.data.data.filter((city) =>
+					city.toLowerCase().includes(e.query.toLowerCase())
+				);
+				setFetchCities(filteredCities);
+				console.log("fetched cities:", filteredCities);
+			})
+			.catch(function (error) {
+				console.log(error);
+			});
+	};
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
 		setData({ ...data, [name]: value });
 	};
 
-	const handleFileUpload = (e) => {
-		if (e.files && e.files.length > 0) {
-			setProfilePhoto(e.files[0]);
-			if (validationErrors.field === "profilePhoto") {
-				setValidationErrors({});
-			}
+	const handlePhotoChange = (e) => {
+		const file = e.target.files[0];
+		setProfilePhoto(file);
+		if (file) {
+			const reader = new FileReader();
+			reader.onloadend = () => setProfilePreview(reader.result);
+			reader.readAsDataURL(file);
+		} else {
+			setProfilePreview(null);
 		}
 	};
 
@@ -49,13 +73,10 @@ export default function AddUser() {
 		e.preventDefault();
 		setLoading(true);
 
-		console.log(data);
-
-		// Use the validation utility
+		// Client-side validation
 		const validationError = validateUserForm(data, {
 			gender,
 			role,
-			selectedCity,
 			profilePhoto,
 			currentUser,
 		});
@@ -70,47 +91,54 @@ export default function AddUser() {
 			const token = localStorage.getItem("token");
 
 			const formData = new FormData();
+
 			formData.append(
 				"firstName",
-				stringUtils.toTitleCase(data.firstName.trim())
+				stringUtils.toTitleCase(data.firstName?.trim() || "")
 			);
 			formData.append(
 				"lastName",
-				stringUtils.toTitleCase(data.lastName.trim())
+				stringUtils.toTitleCase(data.lastName?.trim() || "")
 			);
-			formData.append("mobileNumber", data.mobileNumber.trim());
-			formData.append("email", data.email.toLowerCase().trim());
-			formData.append("password", data.password.trim());
-			formData.append("address", data.address.trim());
-			formData.append("gender", gender);
-			formData.append("role", role);
-			formData.append("city", selectedCity?.name || "");
-			formData.append("profilePhoto", profilePhoto);
+			formData.append("mobileNumber", data.mobileNumber?.trim() || "");
+			formData.append("email", data.email?.toLowerCase().trim() || "");
+			formData.append("password", data.password?.trim() || "");
+			formData.append("address", data.address?.trim() || "");
+			formData.append("gender", gender.toLowerCase());
+			formData.append("role", role.toLowerCase());
+			formData.append("city", city || "");
 
-			console.log("Sending form data...");
+			if (profilePhoto) {
+				formData.append("profilePhoto", profilePhoto);
+			}
 
-			const response = await userAPI.create(formData, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "multipart/form-data",
-				},
-			});
+			const response = await axios.post(
+				"http://127.0.0.1:8000/api/user/addUser",
+				formData,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
 
-			console.log("User created successfully:", response.data);
-			toast.current.show({
-				severity: "success",
-				summary: "Success",
-				detail: "User Added Successfully",
-				life: 3000,
-			});
+			if (response.status === 201) {
+				toast.current.show({
+					severity: "success",
+					summary: "Success",
+					detail: "User Added Successfully",
+					life: 3000,
+				});
 
-			// Reset form
-			setData({});
-			setGender("");
-			setRole("");
-			setSelectedCity(null);
-			setProfilePhoto(null);
-			setValidationErrors({});
+				// Reset form
+				setData({});
+				setGender("");
+				setRole("");
+				setCity(null);
+				setProfilePhoto(null);
+				setProfilePreview(null);
+				setValidationErrors({});
+			}
 		} catch (err) {
 			console.error("Error creating user:", err);
 
@@ -118,19 +146,23 @@ export default function AddUser() {
 				const res = err.response;
 
 				if (res && res.data) {
-					const field = res.data.field;
-					const message = res.data.message;
-
-					if (field) {
+					if (res.data.errors && res.data.errors.length > 0) {
+						const firstError = res.data.errors[0];
 						setValidationErrors({
-							field,
-							errorMessage: message || "Error creating user.",
+							field: firstError.path || firstError.param,
+							errorMessage: firstError.msg || "Validation error",
+						});
+					} else if (res.data.field) {
+						setValidationErrors({
+							field: res.data.field,
+							errorMessage:
+								res.data.message || "Error creating user.",
 						});
 					} else {
 						toast.current.show({
 							severity: "error",
 							summary: "Error",
-							detail: message || "Error creating user.",
+							detail: res.data.message || "Error creating user.",
 							life: 3000,
 						});
 					}
@@ -151,14 +183,11 @@ export default function AddUser() {
 	return (
 		<>
 			<main className="card flex flex-column justify-content-center align-items-center mb-6">
-				<h1 className="text-center" security="secondary">
-					Add User
-				</h1>
+				<h1 className="text-center">Add User</h1>
 
 				<form
 					className="border-round-lg px-5 py-5 shadow-2 w-full sm:w-8 md:w-6 lg:w-4 xl:w-3"
 					onSubmit={handleSubmit}
-					encType="multipart/form-data"
 				>
 					<div className="flex flex-column gap-2">
 						<label htmlFor="firstName">First Name</label>
@@ -168,14 +197,13 @@ export default function AddUser() {
 							name="firstName"
 							value={data.firstName || ""}
 							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "firstName" ? (
+						{validationErrors.field === "firstName" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -186,14 +214,13 @@ export default function AddUser() {
 							name="lastName"
 							value={data.lastName || ""}
 							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "lastName" ? (
+						{validationErrors.field === "lastName" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -236,13 +263,11 @@ export default function AddUser() {
 								</label>
 							</div>
 						</div>
-						{validationErrors.field === "gender" ? (
+						{validationErrors.field === "gender" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -253,15 +278,15 @@ export default function AddUser() {
 							name="mobileNumber"
 							value={data.mobileNumber || ""}
 							onChange={handleChange}
+							minLength={10}
 							maxLength={10}
+							required
 						/>
-						{validationErrors.field === "mobileNumber" ? (
+						{validationErrors.field === "mobileNumber" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -272,14 +297,13 @@ export default function AddUser() {
 							name="email"
 							value={data.email || ""}
 							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "email" ? (
+						{validationErrors.field === "email" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -291,23 +315,22 @@ export default function AddUser() {
 							value={data.password || ""}
 							aria-describedby="password-help"
 							onChange={handleChange}
+							required
 						/>
 						<small id="password-help" className="text-muted">
-							Password must have 8 characters with atleast one
-							UPPERCASE, lowercase, Special Character and Number
+							Password must have 8 characters with at least one
+							UPPERCASE, lowercase, special character and number
 						</small>
-						{validationErrors.field === "password" ? (
+						{validationErrors.field === "password" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="confirmPassword">
-							Confirm Password
+							Confirm Password*
 						</label>
 						<InputText
 							type="password"
@@ -315,14 +338,13 @@ export default function AddUser() {
 							name="confirmPassword"
 							value={data.confirmPassword || ""}
 							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "confirmPassword" ? (
+						{validationErrors.field === "confirmPassword" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -333,33 +355,31 @@ export default function AddUser() {
 							name="address"
 							value={data.address || ""}
 							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "address" ? (
+						{validationErrors.field === "address" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="city">City</label>
-						<Dropdown
-							value={selectedCity}
-							onChange={(e) => setSelectedCity(e.value)}
-							options={cities}
-							optionLabel="name"
-							editable
-							placeholder="Select a City"
+						<AutoComplete
+							id="city"
+							name="city"
+							suggestions={fetchCities}
+							completeMethod={searchCities}
+							value={data.city || ""}
+							onChange={handleChange}
+							required
 						/>
-						{validationErrors.field === "city" ? (
+						{validationErrors.field === "city" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
@@ -404,36 +424,49 @@ export default function AddUser() {
 								</label>
 							</div>
 						</div>
-						{validationErrors.field === "role" ? (
+						{validationErrors.field === "role" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="profilePhoto">Profile Photo</label>
-						<FileUpload
-							mode="basic"
+						<input
+							type="file"
 							name="profilePhoto"
+							id="profilePhoto"
 							accept="image/*"
-							maxFileSize={1000000}
-							onSelect={handleFileUpload}
-							auto={false}
-							chooseLabel="Choose Photo"
+							onChange={handlePhotoChange}
+							required
 						/>
-						{validationErrors.field === "profilePhoto" ? (
+						{profilePreview && (
+							<img
+								src={profilePreview}
+								alt="Profile Preview"
+								className="mt-2"
+								style={{
+									width: "100px",
+									height: "100px",
+									objectFit: "cover",
+									borderRadius: "8px",
+								}}
+							/>
+						)}
+						{validationErrors.field === "profilePhoto" && (
 							<Message
 								severity="error"
 								text={validationErrors.errorMessage}
 							/>
-						) : (
-							""
 						)}
 					</div>
-					<Button label="Signup" loading={loading} className="mt-4" />
+					<Button
+						label="Add User"
+						loading={loading}
+						className="mt-4 w-full"
+						type="submit"
+					/>
 				</form>
 				<Toast ref={toast} position="bottom-right" />
 			</main>

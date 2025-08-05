@@ -94,7 +94,7 @@ export const validateUserForm = (data, options = {}) => {
 	}
 
 	// City validation
-	if (!selectedCity) {
+	if (!city) {
 		return {
 			field: "city",
 			errorMessage: "Please select your City.",
