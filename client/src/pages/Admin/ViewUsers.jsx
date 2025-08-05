@@ -15,6 +15,9 @@ import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
 import { FilterMatchMode, FilterOperator } from "primereact/api";
 import axios from "axios";
+import { MultiSelect } from "primereact/multiselect";
+import autoTable from "jspdf-autotable";
+// import { jsPDF } from "jspdf";
 
 export default function ManageUser() {
 	let emptyUser = {
@@ -50,6 +53,21 @@ export default function ManageUser() {
 	const [globalFilterValue, setGlobalFilterValue] = useState("");
 	const toast = useRef(null);
 	const dt = useRef(null);
+	const allColumns = [
+		{ field: "name", header: "Name" },
+		{ field: "role", header: "Role" },
+		{ field: "status", header: "Status" },
+	];
+
+	const [visibleColumns, setVisibleColumns] = useState(allColumns);
+
+	const onColumnToggle = (event) => {
+		let selectedCols = event.value;
+		let orderedSelectedCols = allColumns.filter((col) =>
+			selectedCols.some((sCol) => sCol.field === col.field)
+		);
+		setVisibleColumns(orderedSelectedCols);
+	};
 
 	const token = localStorage.getItem("token");
 
@@ -212,13 +230,94 @@ export default function ManageUser() {
 		</div>
 	);
 
+	const exportColumns = allColumns.map((col) => ({
+		title: col.header,
+		dataKey: col.field,
+	}));
+
+	const exportCSV = (selectionOnly) => {
+		dt.current.exportCSV({ selectionOnly });
+	};
+
+	const exportPdf = () => {
+		import("jspdf").then((jsPDF) => {
+			import("jspdf-autotable").then(() => {
+				const doc = new jsPDF.default(0, 0);
+
+				autoTable(doc, {
+					columns: exportColumns,
+					body: users,
+				});
+				doc.save("users.pdf");
+			});
+		});
+	};
+
+	const exportExcel = () => {
+		import("xlsx").then((xlsx) => {
+			const worksheet = xlsx.utils.json_to_sheet(users);
+			const workbook = {
+				Sheets: { data: worksheet },
+				SheetNames: ["data"],
+			};
+			const excelBuffer = xlsx.write(workbook, {
+				bookType: "xlsx",
+				type: "array",
+			});
+
+			saveAsExcelFile(excelBuffer, "products");
+		});
+	};
+
+	const saveAsExcelFile = (buffer, fileName) => {
+		import("file-saver").then((module) => {
+			if (module && module.default) {
+				let EXCEL_TYPE =
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+				let EXCEL_EXTENSION = ".xlsx";
+				const data = new Blob([buffer], {
+					type: EXCEL_TYPE,
+				});
+
+				module.default.saveAs(
+					data,
+					fileName +
+						"_export_" +
+						new Date().getTime() +
+						EXCEL_EXTENSION
+				);
+			}
+		});
+	};
 	const rightToolbarTemplate = () => (
-		<Button
-			label="Export"
-			icon="pi pi-upload"
-			className="p-button-help"
-			onClick={() => dt.current.exportCSV()}
-		/>
+		<>
+			<label className="font-bold mr-2">Export in:</label>
+			<Button
+				type="button"
+				icon="pi pi-file"
+				rounded
+				onClick={() => exportCSV(false)}
+				data-pr-tooltip="CSV"
+				className="mr-2"
+			/>
+			<Button
+				type="button"
+				icon="pi pi-file-excel"
+				severity="success"
+				rounded
+				onClick={exportExcel}
+				data-pr-tooltip="XLS"
+				className="mr-2"
+			/>
+			<Button
+				type="button"
+				icon="pi pi-file-pdf"
+				severity="warning"
+				rounded
+				onClick={exportPdf}
+				data-pr-tooltip="PDF"
+			/>
+		</>
 	);
 
 	const actionBodyTemplate = (rowData) => (
@@ -248,16 +347,27 @@ export default function ManageUser() {
 	);
 
 	const header = (
-		<div className="flex flex-wrap gap-2 align-items-center justify-content-between">
+		<div className="flex flex-wrap gap-3 align-items-center justify-content-between">
 			<h4 className="m-0">Manage Users</h4>
-			<IconField iconPosition="left">
-				<InputIcon className="pi pi-search" />
-				<InputText
-					value={globalFilterValue}
-					onChange={onGlobalFilterChange}
-					placeholder="Search..."
+			<div className="flex gap-2 align-items-center">
+				<IconField iconPosition="left">
+					<InputIcon className="pi pi-search" />
+					<InputText
+						value={globalFilterValue}
+						onChange={onGlobalFilterChange}
+						placeholder="Search..."
+					/>
+				</IconField>
+				<MultiSelect
+					value={visibleColumns}
+					options={allColumns}
+					optionLabel="header"
+					onChange={onColumnToggle}
+					display="chip"
+					className="w-full md:w-20rem"
+					placeholder="Select Columns"
 				/>
-			</IconField>
+			</div>
 		</div>
 	);
 
@@ -336,18 +446,7 @@ export default function ManageUser() {
 						selectionMode="multiple"
 						headerStyle={{ width: "3rem" }}
 					/>
-					<Column
-						field="name"
-						header="Name"
-						sortable
-						filter
-						filterPlaceholder="Search by name"
-						body={(rowData) =>
-							`${rowData.firstName || ""} ${
-								rowData.lastName || ""
-							}`.trim()
-						}
-					/>
+
 					<Column
 						field="email"
 						header="Email"
@@ -355,21 +454,31 @@ export default function ManageUser() {
 						filter
 						filterPlaceholder="Search by email"
 					/>
-					<Column
-						field="role"
-						header="Role"
-						sortable
-						filter
-						filterPlaceholder="Search by role"
-					/>
-					<Column
-						field="status"
-						header="Status"
-						sortable
-						body={statusBodyTemplate}
-						filter
-						filterPlaceholder="Status"
-					/>
+
+					{visibleColumns.map((col) => {
+						let bodyTemplate = undefined;
+						if (col.field === "status") {
+							bodyTemplate = statusBodyTemplate;
+						} else if (col.field === "name") {
+							bodyTemplate = (rowData) =>
+								`${rowData.firstName || ""} ${
+									rowData.lastName || ""
+								}`.trim();
+						}
+
+						return (
+							<Column
+								key={col.field}
+								field={col.field}
+								header={col.header}
+								sortable
+								filter
+								filterPlaceholder={`Search by ${col.field}`}
+								body={bodyTemplate}
+							/>
+						);
+					})}
+
 					<Column
 						body={actionBodyTemplate}
 						exportable={false}
