@@ -108,6 +108,25 @@ export const getAllUsers = async (req, res) => {
 	}
 };
 
+export const allUsers = async (req, res) => {
+	try {
+		const allUsers = await Users.find({}).select("-password");
+		if (allUsers.length === 0) {
+			return res.status(404).json({
+				status: "not found",
+				message: "No users found",
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			message: "All users retrieved successfully",
+			data: allUsers,
+		});
+	} catch (err) {
+		return handleApiError(res, err, "Failed to retrieve all users");
+	}
+};
+
 export const getUser = async (req, res) => {
 	try {
 		if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {

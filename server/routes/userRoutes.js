@@ -13,6 +13,8 @@ const authenticate = passport.authenticate("jwt", {
 
 router.get("/getAllUsers", authenticate, userController.getAllUsers);
 
+router.get("/allUsers", authenticate, userController.allUsers);
+
 router.get("/getUser/:id", authenticate, userController.getUser);
 
 router.post(
