@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { RadioButton } from "primereact/radiobutton";
 import { AutoComplete } from "primereact/autocomplete";
@@ -14,6 +14,7 @@ export default function AddUser() {
 	const toast = useRef(null);
 	const [loading, setLoading] = useState(false);
 	const [fetchCities, setFetchCities] = useState([]);
+	const [filteredCities, setFilteredCities] = useState([]);
 
 	const [data, setData] = useState({});
 	const [gender, setGender] = useState("");
@@ -26,30 +27,40 @@ export default function AddUser() {
 
 	const { currentUser, isAuth } = useAuth();
 
-	const searchCities = (e) => {
-		var config = {
-			method: "post",
-			maxBodyLength: Infinity,
-			url: "https://countriesnow.space/api/v0.1/countries/cities",
-			headers: {},
-			data: {
-				country: "India",
-			},
+	useEffect(() => {
+		const fetchInitialCities = async () => {
+			var config = {
+				method: "post",
+				maxBodyLength: Infinity,
+				url: "https://countriesnow.space/api/v0.1/countries/cities",
+				headers: {},
+				data: {
+					country: "India",
+				},
+			};
+			axios(config)
+				.then(function (response) {
+					setFetchCities(response.data.data);
+				})
+				.catch(function (error) {
+					console.log(error);
+				});
 		};
 
-		axios(config)
-			.then(function (response) {
-				console.log(JSON.stringify(response.data));
-				// Filter cities based on user input
-				const filteredCities = response.data.data.filter((city) =>
-					city.toLowerCase().includes(e.query.toLowerCase())
-				);
-				setFetchCities(filteredCities);
-				console.log("fetched cities:", filteredCities);
-			})
-			.catch(function (error) {
-				console.log(error);
-			});
+		fetchInitialCities();
+	}, []);
+
+	const searchCities = (e) => {
+		let query = e.query || "";
+		if (!query) {
+			setFilteredCities([]);
+			return;
+		}
+
+		const filtered = fetchCities.filter((city) =>
+			city.toLowerCase().startsWith(query.toLowerCase())
+		);
+		setFilteredCities(filtered);
 	};
 
 	const handleChange = (e) => {
@@ -106,7 +117,7 @@ export default function AddUser() {
 			formData.append("address", data.address?.trim() || "");
 			formData.append("gender", gender.toLowerCase());
 			formData.append("role", role.toLowerCase());
-			formData.append("city", city || "");
+			formData.append("city", data.city || "");
 
 			if (profilePhoto) {
 				formData.append("profilePhoto", profilePhoto);
@@ -130,14 +141,16 @@ export default function AddUser() {
 					life: 3000,
 				});
 
-				// Reset form
+				// Reset form properly
 				setData({});
 				setGender("");
 				setRole("");
-				setCity(null);
 				setProfilePhoto(null);
 				setProfilePreview(null);
 				setValidationErrors({});
+
+				// Reset file input by creating a reference and resetting it
+				document.getElementById("profilePhoto").value = "";
 			}
 		} catch (err) {
 			console.error("Error creating user:", err);
@@ -369,7 +382,7 @@ export default function AddUser() {
 						<AutoComplete
 							id="city"
 							name="city"
-							suggestions={fetchCities}
+							suggestions={filteredCities}
 							completeMethod={searchCities}
 							value={data.city || ""}
 							onChange={handleChange}
@@ -438,6 +451,7 @@ export default function AddUser() {
 							name="profilePhoto"
 							id="profilePhoto"
 							accept="image/*"
+							className="p-component p-inputtext"
 							onChange={handlePhotoChange}
 							required
 						/>
