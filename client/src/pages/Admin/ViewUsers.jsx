@@ -1,9 +1,450 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from "react";
+import { classNames } from "primereact/utils";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { Toast } from "primereact/toast";
+import { Button } from "primereact/button";
+import { Toolbar } from "primereact/toolbar";
+import { InputTextarea } from "primereact/inputtextarea";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { RadioButton } from "primereact/radiobutton";
+import { InputNumber } from "primereact/inputnumber";
+import { Dialog } from "primereact/dialog";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+import { FilterMatchMode, FilterOperator } from "primereact/api";
 
-function ViewUsers() {
-  return (
-    <div>ViewUsers</div>
-  )
+export default function ManageUser() {
+	let emptyUser = {
+		id: null,
+		name: "",
+		email: "",
+		role: "",
+		status: "active",
+	};
+
+	const [users, setUsers] = useState([]);
+	const [userDialog, setUserDialog] = useState(false);
+	const [deleteUserDialog, setDeleteUserDialog] = useState(false);
+	const [deleteUsersDialog, setDeleteUsersDialog] = useState(false);
+	const [user, setUser] = useState(emptyUser);
+	const [selectedUsers, setSelectedUsers] = useState(null);
+	const [submitted, setSubmitted] = useState(false);
+	const [filters, setFilters] = useState({
+		global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+		name: {
+			operator: FilterOperator.AND,
+			constraints: [
+				{ value: null, matchMode: FilterMatchMode.STARTS_WITH },
+			],
+		},
+		email: {
+			operator: FilterOperator.AND,
+			constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+		},
+		role: { value: null, matchMode: FilterMatchMode.EQUALS },
+		status: { value: null, matchMode: FilterMatchMode.EQUALS },
+	});
+	const [globalFilterValue, setGlobalFilterValue] = useState("");
+	const toast = useRef(null);
+	const dt = useRef(null);
+
+	useEffect(() => {
+		// Simulate API call
+		setUsers([
+			{
+				id: "u1",
+				name: "Alice",
+				email: "alice@example.com",
+				role: "Admin",
+				status: "active",
+			},
+			{
+				id: "u2",
+				name: "Bob",
+				email: "bob@example.com",
+				role: "User",
+				status: "inactive",
+			},
+		]);
+	}, []);
+
+	const openNew = () => {
+		setUser(emptyUser);
+		setSubmitted(false);
+		setUserDialog(true);
+	};
+
+	const hideDialog = () => {
+		setSubmitted(false);
+		setUserDialog(false);
+	};
+
+	const hideDeleteUserDialog = () => {
+		setDeleteUserDialog(false);
+	};
+
+	const hideDeleteUsersDialog = () => {
+		setDeleteUsersDialog(false);
+	};
+
+	const saveUser = () => {
+		setSubmitted(true);
+
+		if (user.name.trim()) {
+			let _users = [...users];
+			let _user = { ...user };
+
+			if (user.id) {
+				const index = findIndexById(user.id);
+				_users[index] = _user;
+				toast.current.show({
+					severity: "success",
+					summary: "Successful",
+					detail: "User Updated",
+					life: 3000,
+				});
+			} else {
+				_user.id = createId();
+				_users.push(_user);
+				toast.current.show({
+					severity: "success",
+					summary: "Successful",
+					detail: "User Created",
+					life: 3000,
+				});
+			}
+
+			setUsers(_users);
+			setUserDialog(false);
+			setUser(emptyUser);
+		}
+	};
+
+	const editUser = (user) => {
+		setUser({ ...user });
+		setUserDialog(true);
+	};
+
+	const confirmDeleteUser = (user) => {
+		setUser(user);
+		setDeleteUserDialog(true);
+	};
+
+	const deleteUser = () => {
+		let _users = users.filter((val) => val.id !== user.id);
+		setUsers(_users);
+		setDeleteUserDialog(false);
+		setUser(emptyUser);
+		toast.current.show({
+			severity: "success",
+			summary: "Successful",
+			detail: "User Deleted",
+			life: 3000,
+		});
+	};
+
+	const deleteSelectedUsers = () => {
+		let _users = users.filter((val) => !selectedUsers.includes(val));
+		setUsers(_users);
+		setDeleteUsersDialog(false);
+		setSelectedUsers(null);
+		toast.current.show({
+			severity: "success",
+			summary: "Successful",
+			detail: "Users Deleted",
+			life: 3000,
+		});
+	};
+
+	const findIndexById = (id) => users.findIndex((u) => u.id === id);
+
+	const createId = () => Math.random().toString(36).substring(2, 7);
+
+	const onGlobalFilterChange = (e) => {
+		const value = e.target.value;
+		let _filters = { ...filters };
+		_filters["global"].value = value;
+		setFilters(_filters);
+		setGlobalFilterValue(value);
+	};
+
+	const leftToolbarTemplate = () => (
+		<div className="flex flex-wrap gap-2">
+			<Button
+				label="New"
+				icon="pi pi-plus"
+				severity="success"
+				onClick={openNew}
+			/>
+			<Button
+				label="Delete"
+				icon="pi pi-trash"
+				severity="danger"
+				onClick={() => setDeleteUsersDialog(true)}
+				disabled={!selectedUsers || !selectedUsers.length}
+			/>
+		</div>
+	);
+
+	const rightToolbarTemplate = () => (
+		<Button
+			label="Export"
+			icon="pi pi-upload"
+			className="p-button-help"
+			onClick={() => dt.current.exportCSV()}
+		/>
+	);
+
+	const actionBodyTemplate = (rowData) => (
+		<>
+			<Button
+				icon="pi pi-pencil"
+				rounded
+				outlined
+				className="mr-2"
+				onClick={() => editUser(rowData)}
+			/>
+			<Button
+				icon="pi pi-trash"
+				rounded
+				outlined
+				severity="danger"
+				onClick={() => confirmDeleteUser(rowData)}
+			/>
+		</>
+	);
+
+	const statusBodyTemplate = (rowData) => (
+		<Tag
+			value={rowData.status}
+			severity={rowData.status === "active" ? "success" : "danger"}
+		></Tag>
+	);
+
+	const header = (
+		<div className="flex flex-wrap gap-2 align-items-center justify-content-between">
+			<h4 className="m-0">Manage Users</h4>
+			<IconField iconPosition="left">
+				<InputIcon className="pi pi-search" />
+				<InputText
+					value={globalFilterValue}
+					onChange={onGlobalFilterChange}
+					placeholder="Search..."
+				/>
+			</IconField>
+		</div>
+	);
+
+	const userDialogFooter = (
+		<>
+			<Button
+				label="Cancel"
+				icon="pi pi-times"
+				outlined
+				onClick={hideDialog}
+			/>
+			<Button label="Save" icon="pi pi-check" onClick={saveUser} />
+		</>
+	);
+
+	const deleteUserDialogFooter = (
+		<>
+			<Button
+				label="No"
+				icon="pi pi-times"
+				outlined
+				onClick={hideDeleteUserDialog}
+			/>
+			<Button
+				label="Yes"
+				icon="pi pi-check"
+				severity="danger"
+				onClick={deleteUser}
+			/>
+		</>
+	);
+
+	const deleteUsersDialogFooter = (
+		<>
+			<Button
+				label="No"
+				icon="pi pi-times"
+				outlined
+				onClick={hideDeleteUsersDialog}
+			/>
+			<Button
+				label="Yes"
+				icon="pi pi-check"
+				severity="danger"
+				onClick={deleteSelectedUsers}
+			/>
+		</>
+	);
+
+	return (
+		<div className="my-4 mx-6">
+			<Toast ref={toast} />
+			<div className="card">
+				<Toolbar
+					className="mb-4"
+					left={leftToolbarTemplate}
+					right={rightToolbarTemplate}
+				/>
+				<DataTable
+					ref={dt}
+					value={users}
+					selection={selectedUsers}
+					onSelectionChange={(e) => setSelectedUsers(e.value)}
+					dataKey="id"
+					paginator
+					rows={10}
+					rowsPerPageOptions={[5, 10, 25]}
+					filters={filters}
+					filterDisplay="menu"
+					globalFilterFields={["name", "email", "role", "status"]}
+					header={header}
+					emptyMessage="No users found."
+					currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+				>
+					<Column
+						selectionMode="multiple"
+						headerStyle={{ width: "3rem" }}
+					/>
+					<Column
+						field="name"
+						header="Name"
+						sortable
+						filter
+						filterPlaceholder="Search by name"
+					/>
+					<Column
+						field="email"
+						header="Email"
+						sortable
+						filter
+						filterPlaceholder="Search by email"
+					/>
+					<Column
+						field="role"
+						header="Role"
+						sortable
+						filter
+						filterPlaceholder="Search by role"
+					/>
+					<Column
+						field="status"
+						header="Status"
+						sortable
+						body={statusBodyTemplate}
+						filter
+						filterPlaceholder="Status"
+					/>
+					<Column
+						body={actionBodyTemplate}
+						exportable={false}
+						style={{ minWidth: "10rem" }}
+					/>
+				</DataTable>
+			</div>
+
+			<Dialog
+				visible={userDialog}
+				style={{ width: "32rem" }}
+				header="User Details"
+				modal
+				className="p-fluid"
+				footer={userDialogFooter}
+				onHide={hideDialog}
+			>
+				<div className="field">
+					<label htmlFor="name" className="font-bold">
+						Name
+					</label>
+					<InputText
+						id="name"
+						value={user.name}
+						onChange={(e) =>
+							setUser({ ...user, name: e.target.value })
+						}
+						required
+						autoFocus
+						className={classNames({
+							"p-invalid": submitted && !user.name,
+						})}
+					/>
+					{submitted && !user.name && (
+						<small className="p-error">Name is required.</small>
+					)}
+				</div>
+				<div className="field">
+					<label htmlFor="email" className="font-bold">
+						Email
+					</label>
+					<InputText
+						id="email"
+						value={user.email}
+						onChange={(e) =>
+							setUser({ ...user, email: e.target.value })
+						}
+						required
+					/>
+				</div>
+				<div className="field">
+					<label htmlFor="role" className="font-bold">
+						Role
+					</label>
+					<InputText
+						id="role"
+						value={user.role}
+						onChange={(e) =>
+							setUser({ ...user, role: e.target.value })
+						}
+						required
+					/>
+				</div>
+			</Dialog>
+
+			<Dialog
+				visible={deleteUserDialog}
+				style={{ width: "32rem" }}
+				header="Confirm"
+				modal
+				footer={deleteUserDialogFooter}
+				onHide={hideDeleteUserDialog}
+			>
+				<div className="confirmation-content">
+					<i
+						className="pi pi-exclamation-triangle mr-3"
+						style={{ fontSize: "2rem" }}
+					/>
+					{user && (
+						<span>
+							Are you sure you want to delete <b>{user.name}</b>?
+						</span>
+					)}
+				</div>
+			</Dialog>
+
+			<Dialog
+				visible={deleteUsersDialog}
+				style={{ width: "32rem" }}
+				header="Confirm"
+				modal
+				footer={deleteUsersDialogFooter}
+				onHide={hideDeleteUsersDialog}
+			>
+				<div className="confirmation-content">
+					<i
+						className="pi pi-exclamation-triangle mr-3"
+						style={{ fontSize: "2rem" }}
+					/>
+					<span>
+						Are you sure you want to delete the selected users?
+					</span>
+				</div>
+			</Dialog>
+		</div>
+	);
 }
-
-export default ViewUsers
