@@ -167,33 +167,51 @@ export default function ManageUser() {
 		let { newData, index } = e;
 		setLoading(true);
 
+		// FIXED: Properly handle the name field which is a composite of firstName and lastName
+		// The name field is just for display, we need to keep firstName and lastName separate
 		console.log("Row edit data before processing:", newData);
 
-		// Handle splitting name field if it was edited
-		if (newData.name !== undefined) {
-			const nameParts = newData.name.trim().split(" ");
-			newData.firstName = nameParts[0] || "";
-			newData.lastName = nameParts.slice(1).join(" ") || "";
-			// Remove the temporary name property as it's not in your database schema
-			delete newData.name;
-		}
+		// Create a clean object with only the fields that should be sent to the API
+		const userToUpdate = {
+			_id: newData._id,
+			// If name was edited, we need to split it into firstName and lastName
+			firstName:
+				newData.firstName ||
+				(newData.name ? newData.name.split(" ")[0] : ""),
+			lastName:
+				newData.lastName ||
+				(newData.name
+					? newData.name.split(" ").slice(1).join(" ")
+					: ""),
+			email: newData.email,
+			gender: newData.gender,
+			mobileNumber: newData.mobileNumber,
+			address: newData.address,
+			city: newData.city,
+			role: newData.role,
+			// Ensure status is properly converted to boolean
+			status:
+				typeof newData.status === "string"
+					? newData.status === "true"
+					: !!newData.status,
+		};
 
-		// Ensure status is a boolean value
-		if (newData.status !== undefined) {
-			// Convert string 'true'/'false' to actual boolean if needed
-			if (typeof newData.status === "string") {
-				newData.status = newData.status === "true";
-			}
-		}
+		// Remove the temporary name property as it's not in the database schema
+		delete userToUpdate.name;
 
-		console.log("Row edit data after processing:", newData);
-
-		_users[index] = newData;
+		console.log("Row edit data after processing:", userToUpdate);
 
 		// Send update to backend
-		updateUserInDatabase(newData)
+		updateUserInDatabase(userToUpdate)
 			.then((response) => {
 				console.log("Update API response:", response.data);
+
+				// FIXED: Update the local state with properly formatted user data
+				_users[index] = {
+					..._users[index], // Keep existing data
+					...userToUpdate, // Override with updated fields
+				};
+
 				setUsers(_users);
 				toast.current.show({
 					severity: "success",
@@ -277,16 +295,37 @@ export default function ManageUser() {
 	);
 
 	const nameEditor = (options) => {
-		const fullName = options.value || "";
+		const rowData = options.rowData;
+
+		const handleFirstNameChange = (e) => {
+			options.editorCallback({
+				...rowData,
+				firstName: e.target.value,
+			});
+		};
+
+		const handleLastNameChange = (e) => {
+			options.editorCallback({
+				...rowData,
+				lastName: e.target.value,
+			});
+		};
 
 		return (
-			<InputText
-				type="text"
-				value={fullName}
-				onChange={(e) => {
-					options.editorCallback(e.target.value);
-				}}
-			/>
+			<div className="flex flex-wrap gap-2">
+				<InputText
+					type="text"
+					value={rowData.firstName || ""}
+					onChange={handleFirstNameChange}
+					placeholder="First Name"
+				/>
+				<InputText
+					type="text"
+					value={rowData.lastName || ""}
+					onChange={handleLastNameChange}
+					placeholder="Last Name"
+				/>
+			</div>
 		);
 	};
 
@@ -904,6 +943,7 @@ export default function ManageUser() {
 							bodyTemplate = (rowData) => rowData.role || "N/A";
 							editorTemplate = roleEditor;
 						} else if (col.field === "gender") {
+							bodyTemplate = (rowData) => rowData.gender || "N/A";
 							editorTemplate = genderEditor;
 						} else if (col.field === "status") {
 							bodyTemplate = statusBodyTemplate;
@@ -915,7 +955,7 @@ export default function ManageUser() {
 								}`.trim();
 								return fullName || "N/A";
 							};
-							editorTemplate = nameEditor;
+							editorTemplate = (options) => nameEditor(options);
 						} else {
 							editorTemplate = textEditor;
 						}
@@ -928,7 +968,7 @@ export default function ManageUser() {
 								sortable
 								filter
 								body={bodyTemplate}
-								editor={editorTemplate}
+								editor={(options) => editorTemplate(options)}
 							/>
 						);
 					})}
