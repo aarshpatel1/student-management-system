@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { userAPI } from "../../../config/axiosConfig";
 import axios, { isAxiosError } from "axios";
 import { validateUserForm, stringUtils } from "../../utils/ValidationUtils";
+import { InputTextarea } from "primereact/inputtextarea";
 
 export default function AddUser() {
 	const toast = useRef(null);
@@ -362,10 +363,13 @@ export default function AddUser() {
 					</div>
 					<div className="flex flex-column gap-2 mt-4">
 						<label htmlFor="address">Address</label>
-						<InputText
-							type="text"
+						<InputTextarea
+							autoResize
 							id="address"
 							name="address"
+							rows={3}
+							cols={30}
+							className="w-full"
 							value={data.address || ""}
 							onChange={handleChange}
 							required

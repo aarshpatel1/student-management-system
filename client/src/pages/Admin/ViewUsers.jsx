@@ -19,6 +19,7 @@ import axios from "axios";
 import { MultiSelect } from "primereact/multiselect";
 import autoTable from "jspdf-autotable";
 import { Link } from "react-router";
+import { AutoComplete } from "primereact/autocomplete";
 
 export default function ManageUser() {
 	let emptyUser = {
@@ -68,6 +69,45 @@ export default function ManageUser() {
 		{ field: "role", header: "Role" },
 		{ field: "status", header: "Status" },
 	];
+
+	const [fetchCities, setFetchCities] = useState([]);
+	const [filteredCities, setFilteredCities] = useState([]);
+
+	useEffect(() => {
+		const fetchInitialCities = async () => {
+			var config = {
+				method: "post",
+				maxBodyLength: Infinity,
+				url: "https://countriesnow.space/api/v0.1/countries/cities",
+				headers: {},
+				data: {
+					country: "India",
+				},
+			};
+			axios(config)
+				.then(function (response) {
+					setFetchCities(response.data.data);
+				})
+				.catch(function (error) {
+					console.log(error);
+				});
+		};
+
+		fetchInitialCities();
+	}, []);
+
+	const searchCities = (e) => {
+		let query = e.query || "";
+		if (!query) {
+			setFilteredCities([]);
+			return;
+		}
+
+		const filtered = fetchCities.filter((city) =>
+			city.toLowerCase().startsWith(query.toLowerCase())
+		);
+		setFilteredCities(filtered);
+	};
 
 	const [visibleColumns, setVisibleColumns] = useState(allColumns);
 
@@ -194,6 +234,45 @@ export default function ManageUser() {
 			type="text"
 			value={options.value}
 			onChange={(e) => options.editorCallback(e.target.value)}
+		/>
+	);
+
+	const emailEditor = (options) => (
+		<InputText
+			type="email"
+			value={options.value}
+			onChange={(e) => options.editorCallback(e.target.value)}
+			keyfilter="email"
+		/>
+	);
+
+	const mobileEditor = (options) => (
+		<InputText
+			type="text"
+			value={options.value}
+			onChange={(e) => options.editorCallback(e.target.value)}
+			minLength={10}
+			maxLength={10}
+			keyfilter="pint"
+		/>
+	);
+
+	const addressEditor = (options) => (
+		<InputTextarea
+			value={options.value}
+			onChange={(e) => options.editorCallback(e.target.value)}
+			rows={3}
+			cols={20}
+			autoResize
+		/>
+	);
+
+	const cityEditor = (options) => (
+		<AutoComplete
+			value={options.value}
+			onChange={(e) => options.editorCallback(e.value)}
+			suggestions={filteredCities}
+			completeMethod={searchCities}
 		/>
 	);
 
@@ -807,7 +886,21 @@ export default function ManageUser() {
 					{visibleColumns.map((col) => {
 						let bodyTemplate, editorTemplate;
 
-						if (col.field === "role") {
+						if (col.field === "mobileNumber") {
+							bodyTemplate = (rowData) =>
+								rowData.mobileNumber || "N/A";
+							editorTemplate = mobileEditor;
+						} else if (col.field === "address") {
+							bodyTemplate = (rowData) =>
+								rowData.address || "N/A";
+							editorTemplate = addressEditor;
+						} else if (col.field === "city") {
+							bodyTemplate = (rowData) => rowData.city || "N/A";
+							editorTemplate = cityEditor;
+						} else if (col.field === "email") {
+							bodyTemplate = (rowData) => rowData.email || "N/A";
+							editorTemplate = emailEditor;
+						} else if (col.field === "role") {
 							bodyTemplate = (rowData) => rowData.role || "N/A";
 							editorTemplate = roleEditor;
 						} else if (col.field === "gender") {
