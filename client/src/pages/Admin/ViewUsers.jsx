@@ -22,12 +22,18 @@ import { Link } from "react-router";
 
 export default function ManageUser() {
 	let emptyUser = {
-		id: null,
-		name: "",
+		_id: null,
+		firstName: "",
+		lastName: "",
+		gender: "",
+		mobileNumber: "",
 		email: "",
+		address: "",
+		city: "",
 		role: "",
-		status: "active",
+		status: false,
 	};
+	const [loading, setLoading] = useState(false);
 	const [users, setUsers] = useState([]);
 	const [userDialog, setUserDialog] = useState(false);
 	const [deleteUserDialog, setDeleteUserDialog] = useState(false);
@@ -119,6 +125,9 @@ export default function ManageUser() {
 	const onRowEditComplete = (e) => {
 		let _users = [...users];
 		let { newData, index } = e;
+		setLoading(true);
+
+		console.log("Row edit data before processing:", newData);
 
 		// Handle splitting name field if it was edited
 		if (newData.name !== undefined) {
@@ -129,11 +138,22 @@ export default function ManageUser() {
 			delete newData.name;
 		}
 
+		// Ensure status is a boolean value
+		if (newData.status !== undefined) {
+			// Convert string 'true'/'false' to actual boolean if needed
+			if (typeof newData.status === "string") {
+				newData.status = newData.status === "true";
+			}
+		}
+
+		console.log("Row edit data after processing:", newData);
+
 		_users[index] = newData;
 
 		// Send update to backend
 		updateUserInDatabase(newData)
-			.then(() => {
+			.then((response) => {
+				console.log("Update API response:", response.data);
 				setUsers(_users);
 				toast.current.show({
 					severity: "success",
@@ -150,6 +170,9 @@ export default function ManageUser() {
 					detail: "Failed to update user information",
 					life: 3000,
 				});
+			})
+			.finally(() => {
+				setLoading(false);
 			});
 	};
 
@@ -204,8 +227,8 @@ export default function ManageUser() {
 	);
 
 	const statusOptions = [
-		{ label: "Active", value: "active" },
-		{ label: "Inactive", value: "inactive" },
+		{ label: "Active", value: true },
+		{ label: "Inactive", value: false },
 	];
 
 	const statusEditor = (options) => (
@@ -291,9 +314,23 @@ export default function ManageUser() {
 
 	const deleteUser = async () => {
 		try {
+			setLoading(true);
 			const token = localStorage.getItem("token");
+			if (!user || !user._id) {
+				toast.current.show({
+					severity: "warn",
+					summary: "No User Selected",
+					detail: "Please select a user to delete",
+					life: 3000,
+				});
+				setDeleteUserDialog(false);
+				setLoading(false);
+				return;
+			}
+
+			// Fix: Use _id instead of id
 			const response = await axios.delete(
-				`http://127.0.0.1:8000/api/user/deleteUser/${user.id}`,
+				`http://127.0.0.1:8000/api/user/deleteUser/${user._id}`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -302,7 +339,8 @@ export default function ManageUser() {
 			);
 
 			if (response.status === 200) {
-				const updatedUsers = users.filter((u) => u.id !== user.id);
+				// Filter out the deleted user using _id
+				const updatedUsers = users.filter((u) => u._id !== user._id);
 				setUsers(updatedUsers);
 				toast.current.show({
 					severity: "success",
@@ -321,15 +359,30 @@ export default function ManageUser() {
 				detail: "Failed to delete user",
 				life: 3000,
 			});
+		} finally {
+			setLoading(false);
 		}
 	};
 
 	const deleteSelectedUsers = async () => {
 		try {
+			setLoading(true);
+			if (!selectedUsers || !selectedUsers.length) {
+				toast.current.show({
+					severity: "warn",
+					summary: "No Selection",
+					detail: "No users selected for deletion",
+					life: 3000,
+				});
+				setDeleteUsersDialog(false);
+				setLoading(false);
+				setSelectedUsers(null);
+				return;
+			}
 			const token = localStorage.getItem("token");
 			const deletePromises = selectedUsers.map((user) =>
 				axios.delete(
-					`http://127.0.0.1:8000/api/user/deleteUser/${user.id}`,
+					`http://127.0.0.1:8000/api/user/deleteUser/${user._id}`,
 					{
 						headers: {
 							Authorization: `Bearer ${token}`,
@@ -341,7 +394,7 @@ export default function ManageUser() {
 			await Promise.all(deletePromises);
 
 			const updatedUsers = users.filter(
-				(u) => !selectedUsers.some((s) => s.id === u.id)
+				(u) => !selectedUsers.some((s) => s._id === u._id)
 			);
 			setUsers(updatedUsers);
 			toast.current.show({
@@ -429,6 +482,16 @@ export default function ManageUser() {
 	});
 
 	const exportCSV = (selectionOnly) => {
+		if (!exportData || exportData.length === 0) {
+			toast.current.show({
+				severity: "warn",
+				summary: "No Data",
+				detail: "No users available to export",
+				life: 3000,
+			});
+			return;
+		}
+		setLoading(true);
 		const dataToExport = selectionOnly
 			? selectedUsers.map((user) =>
 					exportData.find((u) => u.id === user.id)
@@ -451,9 +514,26 @@ export default function ManageUser() {
 		link.href = URL.createObjectURL(blob);
 		link.download = "users_export.csv";
 		link.click();
+		setLoading(false);
+		toast.current.show({
+			severity: "success",
+			summary: "Exported",
+			detail: "Users exported successfully",
+			life: 3000,
+		});
 	};
 
 	const exportPdf = () => {
+		if (!exportData || exportData.length === 0) {
+			toast.current.show({
+				severity: "warn",
+				summary: "No Data",
+				detail: "No users available to export",
+				life: 3000,
+			});
+			return;
+		}
+		setLoading(true);
 		import("jspdf").then((jsPDF) => {
 			import("jspdf-autotable").then(() => {
 				const doc = new jsPDF.default(0, 0);
@@ -475,9 +555,26 @@ export default function ManageUser() {
 				doc.save("users.pdf");
 			});
 		});
+		setLoading(false);
+		toast.current.show({
+			severity: "success",
+			summary: "Exported",
+			detail: "Users exported successfully",
+			life: 3000,
+		});
 	};
 
 	const exportExcel = () => {
+		if (!exportData || exportData.length === 0) {
+			toast.current.show({
+				severity: "warn",
+				summary: "No Data",
+				detail: "No users available to export",
+				life: 3000,
+			});
+			return;
+		}
+		setLoading(true);
 		import("xlsx").then((xlsx) => {
 			const worksheet = xlsx.utils.json_to_sheet(exportData);
 			const workbook = {
@@ -491,9 +588,17 @@ export default function ManageUser() {
 
 			saveAsExcelFile(excelBuffer, "users");
 		});
+		setLoading(false);
+		toast.current.show({
+			severity: "success",
+			summary: "Exported",
+			detail: "Users exported successfully",
+			life: 3000,
+		});
 	};
 
 	const saveAsExcelFile = (buffer, fileName) => {
+		setLoading(true);
 		import("file-saver").then((module) => {
 			if (module && module.default) {
 				let EXCEL_TYPE =
@@ -512,6 +617,13 @@ export default function ManageUser() {
 				);
 			}
 		});
+		setLoading(false);
+		toast.current.show({
+			severity: "success",
+			summary: "Exported",
+			detail: "Users exported successfully",
+			life: 3000,
+		});
 	};
 
 	const rightToolbarTemplate = () => (
@@ -524,6 +636,7 @@ export default function ManageUser() {
 				onClick={() => exportCSV(false)}
 				data-pr-tooltip="CSV"
 				className="mr-2"
+				loading={loading}
 			/>
 			<Button
 				type="button"
@@ -533,6 +646,7 @@ export default function ManageUser() {
 				onClick={exportExcel}
 				data-pr-tooltip="XLS"
 				className="mr-2"
+				loading={loading}
 			/>
 			<Button
 				type="button"
@@ -541,6 +655,7 @@ export default function ManageUser() {
 				rounded
 				onClick={exportPdf}
 				data-pr-tooltip="PDF"
+				loading={loading}
 			/>
 		</>
 	);
@@ -604,7 +719,12 @@ export default function ManageUser() {
 				outlined
 				onClick={hideDialog}
 			/>
-			<Button label="Save" icon="pi pi-check" onClick={saveUser} />
+			<Button
+				label="Save"
+				icon="pi pi-check"
+				onClick={saveUser}
+				loading={loading}
+			/>
 		</>
 	);
 
@@ -620,6 +740,7 @@ export default function ManageUser() {
 				label="Yes"
 				icon="pi pi-check"
 				severity="danger"
+				loading={loading}
 				onClick={deleteUser}
 			/>
 		</>
@@ -637,6 +758,7 @@ export default function ManageUser() {
 				label="Yes"
 				icon="pi pi-check"
 				severity="danger"
+				loading={loading}
 				onClick={deleteSelectedUsers}
 			/>
 		</>
@@ -644,7 +766,7 @@ export default function ManageUser() {
 
 	return (
 		<div className="lg:my-4 lg:mx-6">
-			<Toast ref={toast} />
+			<Toast ref={toast} position="bottom-right" />
 			<div className="card">
 				<Toolbar
 					className="mb-4"
