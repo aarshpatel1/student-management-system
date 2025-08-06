@@ -12,6 +12,7 @@ import { RadioButton } from "primereact/radiobutton";
 import { InputNumber } from "primereact/inputnumber";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
+import { Dropdown } from "primereact/dropdown";
 import { Tag } from "primereact/tag";
 import { FilterMatchMode, FilterOperator } from "primereact/api";
 import axios from "axios";
@@ -96,11 +97,11 @@ export default function ManageUser() {
 		fetchAllUsers();
 	}, []);
 
-	const openNew = () => {
-		setUser(emptyUser);
-		setSubmitted(false);
-		setUserDialog(true);
-	};
+	// const openNew = () => {
+	// 	setUser(emptyUser);
+	// 	setSubmitted(false);
+	// 	setUserDialog(true);
+	// };
 
 	const hideDialog = () => {
 		setSubmitted(false);
@@ -115,42 +116,172 @@ export default function ManageUser() {
 		setDeleteUsersDialog(false);
 	};
 
-	const saveUser = () => {
-		setSubmitted(true);
+	const onRowEditComplete = (e) => {
+		let _users = [...users];
+		let { newData, index } = e;
 
-		if (user.name.trim()) {
-			let _users = [...users];
-			let _user = { ...user };
+		// Handle splitting name field if it was edited
+		if (newData.name !== undefined) {
+			const nameParts = newData.name.trim().split(" ");
+			newData.firstName = nameParts[0] || "";
+			newData.lastName = nameParts.slice(1).join(" ") || "";
+			// Remove the temporary name property as it's not in your database schema
+			delete newData.name;
+		}
 
-			if (user.id) {
-				const index = findIndexById(user.id);
-				_users[index] = _user;
+		_users[index] = newData;
+
+		// Send update to backend
+		updateUserInDatabase(newData)
+			.then(() => {
+				setUsers(_users);
 				toast.current.show({
 					severity: "success",
-					summary: "Successful",
-					detail: "User Updated",
+					summary: "Updated",
+					detail: "User info updated",
 					life: 3000,
 				});
-			} else {
-				_user.id = createId();
-				_users.push(_user);
+			})
+			.catch((error) => {
+				console.error("Error updating user:", error);
 				toast.current.show({
-					severity: "success",
-					summary: "Successful",
-					detail: "User Created",
+					severity: "error",
+					summary: "Error",
+					detail: "Failed to update user information",
+					life: 3000,
+				});
+			});
+	};
+
+	const updateUserInDatabase = async (userData) => {
+		const token = localStorage.getItem("token");
+		return axios.put(
+			`http://127.0.0.1:8000/api/user/updateUser/${userData._id}`,
+			userData,
+			{
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			}
+		);
+	};
+
+	const textEditor = (options) => (
+		<InputText
+			type="text"
+			value={options.value}
+			onChange={(e) => options.editorCallback(e.target.value)}
+		/>
+	);
+
+	const nameEditor = (options) => {
+		const fullName = options.value || "";
+
+		return (
+			<InputText
+				type="text"
+				value={fullName}
+				onChange={(e) => {
+					options.editorCallback(e.target.value);
+				}}
+			/>
+		);
+	};
+
+	const rolesOptions = [
+		{ label: "Admin", value: "admin" },
+		{ label: "Faculty", value: "faculty" },
+		{ label: "Student", value: "student" },
+	];
+
+	const roleEditor = (options) => (
+		<Dropdown
+			value={options.value}
+			options={rolesOptions}
+			onChange={(e) => options.editorCallback(e.value)}
+			placeholder="Select Role"
+		/>
+	);
+
+	const statusOptions = [
+		{ label: "Active", value: "active" },
+		{ label: "Inactive", value: "inactive" },
+	];
+
+	const statusEditor = (options) => (
+		<Dropdown
+			value={options.value}
+			options={statusOptions}
+			onChange={(e) => options.editorCallback(e.value)}
+			placeholder="Select Status"
+		/>
+	);
+
+	const genderOptions = [
+		{ label: "Male", value: "male" },
+		{ label: "Female", value: "female" },
+		{ label: "Other", value: "other" },
+	];
+
+	const genderEditor = (options) => (
+		<Dropdown
+			value={options.value}
+			options={genderOptions}
+			onChange={(e) => options.editorCallback(e.value)}
+			placeholder="Select Gender"
+		/>
+	);
+
+	const editUser = async (user) => {
+		setUser({ ...user });
+		setUserDialog(true); // Open the dialog for editing
+	};
+
+	const saveUser = async () => {
+		setSubmitted(true);
+
+		if (
+			user.firstName.trim() &&
+			user.lastName.trim() &&
+			user.email.trim()
+		) {
+			try {
+				const token = localStorage.getItem("token");
+				const response = await axios.put(
+					`http://127.0.0.1:8000/api/user/updateUser/${user.id}`,
+					user,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				if (response.status === 200) {
+					const updatedUser = response.data.user;
+					const updatedUsers = users.map((u) =>
+						u.id === updatedUser.id ? updatedUser : u
+					);
+					setUsers(updatedUsers);
+					toast.current.show({
+						severity: "success",
+						summary: "Successful",
+						detail: "User Updated",
+						life: 3000,
+					});
+					setUserDialog(false);
+					setUser(emptyUser);
+				}
+			} catch (err) {
+				console.error("Error updating user:", err);
+				toast.current.show({
+					severity: "error",
+					summary: "Error",
+					detail: "Failed to update user",
 					life: 3000,
 				});
 			}
-
-			setUsers(_users);
-			setUserDialog(false);
-			setUser(emptyUser);
 		}
-	};
-
-	const editUser = (user) => {
-		setUser({ ...user });
-		setUserDialog(true);
 	};
 
 	const confirmDeleteUser = (user) => {
@@ -158,30 +289,78 @@ export default function ManageUser() {
 		setDeleteUserDialog(true);
 	};
 
-	const deleteUser = () => {
-		let _users = users.filter((val) => val.id !== user.id);
-		setUsers(_users);
-		setDeleteUserDialog(false);
-		setUser(emptyUser);
-		toast.current.show({
-			severity: "success",
-			summary: "Successful",
-			detail: "User Deleted",
-			life: 3000,
-		});
+	const deleteUser = async () => {
+		try {
+			const token = localStorage.getItem("token");
+			const response = await axios.delete(
+				`http://127.0.0.1:8000/api/user/deleteUser/${user.id}`,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
+
+			if (response.status === 200) {
+				const updatedUsers = users.filter((u) => u.id !== user.id);
+				setUsers(updatedUsers);
+				toast.current.show({
+					severity: "success",
+					summary: "Successful",
+					detail: "User Deleted",
+					life: 3000,
+				});
+				setDeleteUserDialog(false);
+				setUser(emptyUser);
+			}
+		} catch (err) {
+			console.error("Error deleting user:", err);
+			toast.current.show({
+				severity: "error",
+				summary: "Error",
+				detail: "Failed to delete user",
+				life: 3000,
+			});
+		}
 	};
 
-	const deleteSelectedUsers = () => {
-		let _users = users.filter((val) => !selectedUsers.includes(val));
-		setUsers(_users);
-		setDeleteUsersDialog(false);
-		setSelectedUsers(null);
-		toast.current.show({
-			severity: "success",
-			summary: "Successful",
-			detail: "Users Deleted",
-			life: 3000,
-		});
+	const deleteSelectedUsers = async () => {
+		try {
+			const token = localStorage.getItem("token");
+			const deletePromises = selectedUsers.map((user) =>
+				axios.delete(
+					`http://127.0.0.1:8000/api/user/deleteUser/${user.id}`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				)
+			);
+
+			await Promise.all(deletePromises);
+
+			const updatedUsers = users.filter(
+				(u) => !selectedUsers.some((s) => s.id === u.id)
+			);
+			setUsers(updatedUsers);
+			toast.current.show({
+				severity: "success",
+				summary: "Successful",
+				detail: "Selected Users Deleted",
+				life: 3000,
+			});
+			setDeleteUsersDialog(false);
+			setSelectedUsers(null);
+		} catch (err) {
+			console.error("Error deleting selected users:", err);
+			toast.current.show({
+				severity: "error",
+				summary: "Error",
+				detail: "Failed to delete selected users",
+				life: 3000,
+			});
+		}
 	};
 
 	const findIndexById = (id) => users.findIndex((u) => u.id === id);
@@ -368,13 +547,13 @@ export default function ManageUser() {
 
 	const actionBodyTemplate = (rowData) => (
 		<>
-			<Button
+			{/* <Button
 				icon="pi pi-pencil"
 				rounded
 				outlined
 				className="mr-2"
 				onClick={() => editUser(rowData)}
-			/>
+			/> */}
 			<Button
 				icon="pi pi-trash"
 				rounded
@@ -475,9 +654,11 @@ export default function ManageUser() {
 				<DataTable
 					ref={dt}
 					value={users}
+					editMode="row"
+					dataKey="_id"
+					onRowEditComplete={onRowEditComplete}
 					selection={selectedUsers}
 					onSelectionChange={(e) => setSelectedUsers(e.value)}
-					dataKey="_id"
 					paginator
 					rows={10}
 					rowsPerPageOptions={[5, 10, 25]}
@@ -502,14 +683,26 @@ export default function ManageUser() {
 					/>
 
 					{visibleColumns.map((col) => {
-						let bodyTemplate = undefined;
-						if (col.field === "status") {
+						let bodyTemplate, editorTemplate;
+
+						if (col.field === "role") {
+							bodyTemplate = (rowData) => rowData.role || "N/A";
+							editorTemplate = roleEditor;
+						} else if (col.field === "gender") {
+							editorTemplate = genderEditor;
+						} else if (col.field === "status") {
 							bodyTemplate = statusBodyTemplate;
+							editorTemplate = statusEditor;
 						} else if (col.field === "name") {
-							bodyTemplate = (rowData) =>
-								`${rowData.firstName || ""} ${
+							bodyTemplate = (rowData) => {
+								const fullName = `${rowData.firstName || ""} ${
 									rowData.lastName || ""
 								}`.trim();
+								return fullName || "N/A";
+							};
+							editorTemplate = nameEditor;
+						} else {
+							editorTemplate = textEditor;
 						}
 
 						return (
@@ -519,16 +712,23 @@ export default function ManageUser() {
 								header={col.header}
 								sortable
 								filter
-								filterPlaceholder={`Search by ${col.field}`}
 								body={bodyTemplate}
+								editor={editorTemplate}
 							/>
 						);
 					})}
 
 					<Column
+						header="Edit Row"
+						rowEditor
+						headerStyle={{ width: "10%", minWidth: "8rem" }}
+						bodyStyle={{ textAlign: "center" }}
+					/>
+					<Column
+						header="Delete"
 						body={actionBodyTemplate}
 						exportable={false}
-						style={{ minWidth: "10rem" }}
+						style={{ minWidth: "8rem" }}
 					/>
 				</DataTable>
 			</div>
