@@ -155,6 +155,8 @@ function Signup() {
 							name="email"
 							value={data.email || ""}
 							onChange={handleChange}
+							autoComplete="email"
+							autoFocus
 						/>
 						{validationErrors.field === "email" ? (
 							<Message
@@ -212,7 +214,10 @@ function Signup() {
 
 					<div className="flex mt-3 justify-content-center">
 						Already have an account?
-						<a href="/login" className="ml-2 font-bold hover:underline">
+						<a
+							href="/login"
+							className="ml-2 font-bold hover:underline"
+						>
 							Login
 						</a>
 					</div>

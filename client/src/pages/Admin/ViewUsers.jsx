@@ -17,7 +17,7 @@ import { FilterMatchMode, FilterOperator } from "primereact/api";
 import axios from "axios";
 import { MultiSelect } from "primereact/multiselect";
 import autoTable from "jspdf-autotable";
-// import { jsPDF } from "jspdf";
+import { Link } from "react-router";
 
 export default function ManageUser() {
 	let emptyUser = {
@@ -27,7 +27,6 @@ export default function ManageUser() {
 		role: "",
 		status: "active",
 	};
-
 	const [users, setUsers] = useState([]);
 	const [userDialog, setUserDialog] = useState(false);
 	const [deleteUserDialog, setDeleteUserDialog] = useState(false);
@@ -55,6 +54,10 @@ export default function ManageUser() {
 	const dt = useRef(null);
 	const allColumns = [
 		{ field: "name", header: "Name" },
+		{ field: "gender", header: "Gender" },
+		{ field: "mobileNumber", header: "Mobile Number" },
+		{ field: "address", header: "Address" },
+		{ field: "city", header: "City" },
 		{ field: "role", header: "Role" },
 		{ field: "status", header: "Status" },
 	];
@@ -72,8 +75,6 @@ export default function ManageUser() {
 	const token = localStorage.getItem("token");
 
 	useEffect(() => {
-		// Simulate API call
-
 		const fetchAllUsers = async () => {
 			try {
 				const response = await axios.get(
@@ -93,23 +94,6 @@ export default function ManageUser() {
 		};
 
 		fetchAllUsers();
-
-		// setUsers([
-		// 	{
-		// 		id: "u1",
-		// 		name: "Alice",
-		// 		email: "alice@example.com",
-		// 		role: "Admin",
-		// 		status: "active",
-		// 	},
-		// 	{
-		// 		id: "u2",
-		// 		name: "Bob",
-		// 		email: "bob@example.com",
-		// 		role: "User",
-		// 		status: "inactive",
-		// 	},
-		// ]);
 	}, []);
 
 	const openNew = () => {
@@ -214,12 +198,9 @@ export default function ManageUser() {
 
 	const leftToolbarTemplate = () => (
 		<div className="flex flex-wrap gap-2">
-			<Button
-				label="New"
-				icon="pi pi-plus"
-				severity="success"
-				onClick={openNew}
-			/>
+			<Link to="/admin/addUser">
+				<Button label="New" icon="pi pi-plus" severity="success" />
+			</Link>
 			<Button
 				label="Delete"
 				icon="pi pi-trash"
@@ -353,6 +334,7 @@ export default function ManageUser() {
 			}
 		});
 	};
+
 	const rightToolbarTemplate = () => (
 		<>
 			<label className="font-bold mr-2">Export in:</label>

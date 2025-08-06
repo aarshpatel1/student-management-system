@@ -132,6 +132,7 @@ function Login() {
 							value={credentials.email || ""}
 							onChange={handleChange}
 							autoComplete="true"
+							autoFocus
 						/>
 						{validationErrors.field === "email" && (
 							<Message
