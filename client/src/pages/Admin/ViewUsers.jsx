@@ -156,39 +156,61 @@ export default function ManageUser() {
 
 	const onRowEditComplete = (e) => {
 		let _users = [...users];
-		let { newData, index } = e;
+		let { newData, index, originalData } = e;
+
+		// Check if any data has actually changed
+		const hasChanges =
+			JSON.stringify(newData) !== JSON.stringify(originalData);
+
+		if (!hasChanges) {
+			console.log("No changes detected, skipping update");
+			return;
+		}
+
 		setLoading(true);
 
 		console.log("Row edit data before processing:", newData);
 
-		// Create a clean object with only the fields that should be sent to the API
+		// Create a clean object with only the changed fields
 		const userToUpdate = {
 			_id: newData._id,
-			// If name was edited, we need to split it into firstName and lastName
-			firstName:
-				newData.firstName ||
-				(newData.name ? newData.name.split(" ")[0] : ""),
-			lastName:
-				newData.lastName ||
-				(newData.name
-					? newData.name.split(" ").slice(1).join(" ")
-					: ""),
-			email: newData.email,
-			gender: newData.gender,
-			mobileNumber: newData.mobileNumber,
-			address: newData.address,
-			city: newData.city,
-			role: newData.role,
-			profilePhoto: profilePhoto,
-			// Ensure status is properly converted to boolean
-			status:
-				typeof newData.status === "string"
-					? newData.status === "true"
-					: !!newData.status,
 		};
 
-		// Remove the temporary name property as it's not in the database schema
-		delete userToUpdate.name;
+		// Only include fields that have changed
+		if (newData.firstName !== originalData.firstName)
+			userToUpdate.firstName = newData.firstName;
+		if (newData.lastName !== originalData.lastName)
+			userToUpdate.lastName = newData.lastName;
+		if (newData.email !== originalData.email)
+			userToUpdate.email = newData.email;
+		if (newData.gender !== originalData.gender)
+			userToUpdate.gender = newData.gender;
+		if (newData.mobileNumber !== originalData.mobileNumber)
+			userToUpdate.mobileNumber = newData.mobileNumber;
+		if (newData.address !== originalData.address)
+			userToUpdate.address = newData.address;
+		if (newData.city !== originalData.city)
+			userToUpdate.city = newData.city;
+		if (newData.role !== originalData.role)
+			userToUpdate.role = newData.role;
+
+		// Handle status separately to ensure boolean conversion
+		if (newData.status !== originalData.status) {
+			userToUpdate.status =
+				typeof newData.status === "string"
+					? newData.status === "true"
+					: !!newData.status;
+		}
+
+		// Don't include profilePhoto unless it was explicitly changed in this edit
+		// Profile photo is handled separately by the profilePhotoEditor component
+
+		// If no fields were changed, don't make the API call
+		if (Object.keys(userToUpdate).length <= 1) {
+			console.log("No meaningful changes to update");
+			setLoading(false);
+			return;
+		}
 
 		console.log("Row edit data after processing:", userToUpdate);
 
@@ -215,7 +237,9 @@ export default function ManageUser() {
 				toast.current.show({
 					severity: "error",
 					summary: "Error",
-					detail: "Failed to update user information",
+					detail:
+						error.response?.data?.message ||
+						"Failed to update user information",
 					life: 3000,
 				});
 			})
@@ -226,15 +250,20 @@ export default function ManageUser() {
 
 	const updateUserInDatabase = async (userData) => {
 		const token = localStorage.getItem("token");
-		return axios.put(
-			`http://127.0.0.1:8000/api/user/updateUser/${userData._id}`,
-			userData,
-			{
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			}
-		);
+		try {
+			return await axios.put(
+				`http://127.0.0.1:8000/api/user/updateUser/${userData._id}`,
+				userData,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
+		} catch (error) {
+			console.error("Error in updateUserInDatabase:", error);
+			throw error; // Re-throw so it can be caught by the calling function
+		}
 	};
 
 	const [profilePhoto, setProfilePhoto] = useState(null);
@@ -243,57 +272,80 @@ export default function ManageUser() {
 	const profilePhotoEditor = (options) => {
 		const handlePhotoChange = async (e) => {
 			const file = e.target.files[0];
+			if (!file) return;
+
+			// Validate file type
+			if (!file.type.startsWith("image/")) {
+				toast.current.show({
+					severity: "error",
+					summary: "Invalid File",
+					detail: "Please select a valid image file",
+					life: 3000,
+				});
+				return;
+			}
+
+			// Validate file size (limit to 2MB)
+			if (file.size > 2 * 1024 * 1024) {
+				toast.current.show({
+					severity: "error",
+					summary: "File Too Large",
+					detail: "Profile photo must be smaller than 2MB",
+					life: 3000,
+				});
+				return;
+			}
+
 			setProfilePhoto(file);
+			const formData = new FormData();
+			formData.append("profilePhoto", file);
 
-			if (file) {
-				const formData = new FormData();
-				formData.append("profilePhoto", file);
+			const token = localStorage.getItem("token");
 
-				const token = localStorage.getItem("token");
+			try {
+				setLoading(true);
 
-				try {
-					setLoading(true);
+				const response = await axios.patch(
+					`http://127.0.0.1:8000/api/user/updateUser/${options.rowData._id}`,
+					formData,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "multipart/form-data",
+						},
+					}
+				);
 
-					const response = await axios.patch(
-						`http://127.0.0.1:8000/api/user/updateUser/${options.rowData._id}`,
-						formData,
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-								"Content-Type": "multipart/form-data",
-							},
-						}
-					);
+				console.log("Profile photo updated:", response.data);
 
-					console.log("Profile photo updated:", response.data);
+				// Update the preview and the table row
+				const updatedUrl = response.data.user.profilePhoto.url;
 
-					// Update the preview and the table row
-					const updatedUrl = response.data.user.profilePhoto.url;
+				const _users = users.map((u) =>
+					u._id === options.rowData._id
+						? { ...u, profilePhoto: { url: updatedUrl } }
+						: u
+				);
+				setUsers(_users);
 
-					const _users = users.map((u) =>
-						u._id === options.rowData._id
-							? { ...u, profilePhoto: { url: updatedUrl } }
-							: u
-					);
-					setUsers(_users);
-
-					toast.current.show({
-						severity: "success",
-						summary: "Updated",
-						detail: "Profile photo updated",
-						life: 3000,
-					});
-				} catch (error) {
-					console.error("Error uploading profile photo:", error);
-					toast.current.show({
-						severity: "error",
-						summary: "Error",
-						detail: "Failed to upload profile photo",
-						life: 3000,
-					});
-				} finally {
-					setLoading(false);
-				}
+				toast.current.show({
+					severity: "success",
+					summary: "Updated",
+					detail: "Profile photo updated",
+					life: 3000,
+				});
+			} catch (error) {
+				console.error("Error uploading profile photo:", error);
+				toast.current.show({
+					severity: "error",
+					summary: "Error",
+					detail:
+						error.response?.data?.message ||
+						"Failed to upload profile photo",
+					life: 3000,
+				});
+			} finally {
+				setLoading(false);
 			}
 		};
 
