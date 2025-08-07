@@ -8,8 +8,6 @@ import { Toolbar } from "primereact/toolbar";
 import { InputTextarea } from "primereact/inputtextarea";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
-import { RadioButton } from "primereact/radiobutton";
-import { InputNumber } from "primereact/inputnumber";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -143,12 +141,6 @@ export default function ManageUser() {
 		fetchAllUsers();
 	}, []);
 
-	// const openNew = () => {
-	// 	setUser(emptyUser);
-	// 	setSubmitted(false);
-	// 	setUserDialog(true);
-	// };
-
 	const hideDialog = () => {
 		setSubmitted(false);
 		setUserDialog(false);
@@ -167,8 +159,6 @@ export default function ManageUser() {
 		let { newData, index } = e;
 		setLoading(true);
 
-		// FIXED: Properly handle the name field which is a composite of firstName and lastName
-		// The name field is just for display, we need to keep firstName and lastName separate
 		console.log("Row edit data before processing:", newData);
 
 		// Create a clean object with only the fields that should be sent to the API
@@ -206,7 +196,6 @@ export default function ManageUser() {
 			.then((response) => {
 				console.log("Update API response:", response.data);
 
-				// FIXED: Update the local state with properly formatted user data
 				_users[index] = {
 					..._users[index], // Keep existing data
 					...userToUpdate, // Override with updated fields
@@ -373,11 +362,6 @@ export default function ManageUser() {
 		/>
 	);
 
-	const editUser = async (user) => {
-		setUser({ ...user });
-		setUserDialog(true); // Open the dialog for editing
-	};
-
 	const saveUser = async () => {
 		setSubmitted(true);
 
@@ -446,7 +430,6 @@ export default function ManageUser() {
 				return;
 			}
 
-			// Fix: Use _id instead of id
 			const response = await axios.delete(
 				`http://127.0.0.1:8000/api/user/deleteUser/${user._id}`,
 				{
@@ -457,7 +440,6 @@ export default function ManageUser() {
 			);
 
 			if (response.status === 200) {
-				// Filter out the deleted user using _id
 				const updatedUsers = users.filter((u) => u._id !== user._id);
 				setUsers(updatedUsers);
 				toast.current.show({
@@ -545,21 +527,6 @@ export default function ManageUser() {
 		setFilters(_filters);
 		setGlobalFilterValue(value);
 	};
-
-	const leftToolbarTemplate = () => (
-		<div className="flex flex-wrap gap-2">
-			<Link to="/admin/addUser">
-				<Button label="New" icon="pi pi-plus" severity="success" />
-			</Link>
-			<Button
-				label="Delete"
-				icon="pi pi-trash"
-				severity="danger"
-				onClick={() => setDeleteUsersDialog(true)}
-				disabled={!selectedUsers || !selectedUsers.length}
-			/>
-		</div>
-	);
 
 	const exportColumns = [
 		{ title: "Email", dataKey: "email" }, // Ensure email is always the first column
@@ -744,6 +711,21 @@ export default function ManageUser() {
 		});
 	};
 
+	const leftToolbarTemplate = () => (
+		<div className="flex flex-wrap gap-2">
+			<Link to="/admin/addUser">
+				<Button label="New" icon="pi pi-plus" severity="success" />
+			</Link>
+			<Button
+				label="Delete"
+				icon="pi pi-trash"
+				severity="danger"
+				onClick={() => setDeleteUsersDialog(true)}
+				disabled={!selectedUsers || !selectedUsers.length}
+			/>
+		</div>
+	);
+
 	const rightToolbarTemplate = () => (
 		<>
 			<label className="font-bold mr-2">Export in:</label>
@@ -780,13 +762,6 @@ export default function ManageUser() {
 
 	const actionBodyTemplate = (rowData) => (
 		<>
-			{/* <Button
-				icon="pi pi-pencil"
-				rounded
-				outlined
-				className="mr-2"
-				onClick={() => editUser(rowData)}
-			/> */}
 			<Button
 				icon="pi pi-trash"
 				rounded
@@ -987,86 +962,6 @@ export default function ManageUser() {
 					/>
 				</DataTable>
 			</div>
-
-			<Dialog
-				visible={userDialog}
-				style={{ width: "32rem" }}
-				header="User Details"
-				modal
-				className="p-fluid"
-				footer={userDialogFooter}
-				onHide={hideDialog}
-			>
-				<div className="field">
-					<label htmlFor="firstName" className="font-bold">
-						First Name
-					</label>
-					<InputText
-						id="firstName"
-						value={user.firstName || ""}
-						onChange={(e) =>
-							setUser({ ...user, firstName: e.target.value })
-						}
-						required
-						autoFocus
-						className={classNames({
-							"p-invalid": submitted && !user.firstName,
-						})}
-					/>
-					{submitted && !user.firstName && (
-						<small className="p-error">
-							First name is required.
-						</small>
-					)}
-				</div>
-				<div className="field">
-					<label htmlFor="lastName" className="font-bold">
-						Last Name
-					</label>
-					<InputText
-						id="lastName"
-						value={user.lastName || ""}
-						onChange={(e) =>
-							setUser({ ...user, lastName: e.target.value })
-						}
-						required
-						className={classNames({
-							"p-invalid": submitted && !user.lastName,
-						})}
-					/>
-					{submitted && !user.lastName && (
-						<small className="p-error">
-							Last name is required.
-						</small>
-					)}
-				</div>
-				<div className="field">
-					<label htmlFor="email" className="font-bold">
-						Email
-					</label>
-					<InputText
-						id="email"
-						value={user.email}
-						onChange={(e) =>
-							setUser({ ...user, email: e.target.value })
-						}
-						required
-					/>
-				</div>
-				<div className="field">
-					<label htmlFor="role" className="font-bold">
-						Role
-					</label>
-					<InputText
-						id="role"
-						value={user.role}
-						onChange={(e) =>
-							setUser({ ...user, role: e.target.value })
-						}
-						required
-					/>
-				</div>
-			</Dialog>
 
 			<Dialog
 				visible={deleteUserDialog}
