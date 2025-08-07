@@ -24,6 +24,7 @@ export default function ManageUser() {
 	const { currentUser, isAuth } = useAuth();
 	let emptyUser = {
 		_id: null,
+		profilePhoto: "",
 		firstName: "",
 		lastName: "",
 		gender: "",
@@ -61,6 +62,7 @@ export default function ManageUser() {
 	const toast = useRef(null);
 	const dt = useRef(null);
 	const allColumns = [
+		{ field: "profilePhoto.url", header: "Profile Photo" },
 		{ field: "firstName", header: "First Name" },
 		{ field: "lastName", header: "Last Name" },
 		{ field: "gender", header: "Gender" },
@@ -177,6 +179,7 @@ export default function ManageUser() {
 			address: newData.address,
 			city: newData.city,
 			role: newData.role,
+			profilePhoto: profilePhoto,
 			// Ensure status is properly converted to boolean
 			status:
 				typeof newData.status === "string"
@@ -231,6 +234,57 @@ export default function ManageUser() {
 					Authorization: `Bearer ${token}`,
 				},
 			}
+		);
+	};
+
+	const [profilePhoto, setProfilePhoto] = useState(null);
+	const [profilePreview, setProfilePreview] = useState(null);
+
+	const profilePhotoEditor = (options) => {
+		const handlePhotoChange = (e) => {
+			const file = e.target.files[0];
+			setProfilePhoto(file);
+			if (file) {
+				const reader = new FileReader();
+				reader.onloadend = () => {
+					setProfilePreview(reader.result);
+					options.editorCallback({
+						...options.rowData,
+						profilePhoto: {
+							url: reader.result,
+							fileName: file.name,
+						},
+					});
+				};
+				reader.readAsDataURL(file);
+			} else {
+				setProfilePreview(null);
+			}
+		};
+
+		return (
+			<div className="flex flex-column">
+				<img
+					src={options.rowData.profilePhoto.url}
+					alt="Profile"
+					style={{
+						width: 40,
+						height: 40,
+						borderRadius: "50%",
+						objectFit: "cover",
+					}}
+					className="mb-2"
+				/>
+				<input
+					type="file"
+					name="profilePhoto"
+					id="profilePhoto"
+					accept="image/*"
+					className="p-inputtext p-component "
+					onChange={handlePhotoChange}
+					required
+				/>
+			</div>
 		);
 	};
 
@@ -877,53 +931,82 @@ export default function ManageUser() {
 						editor={(options) => emailEditor(options)}
 					/>
 
-					{visibleColumns.map((col) => {
-						let bodyTemplate, editorTemplate;
-
-						if (col.field === "mobileNumber") {
-							bodyTemplate = (rowData) =>
-								rowData.mobileNumber || "N/A";
-							editorTemplate = mobileEditor;
-						} else if (col.field === "address") {
-							bodyTemplate = (rowData) =>
-								rowData.address || "N/A";
-							editorTemplate = addressEditor;
-						} else if (col.field === "city") {
-							bodyTemplate = (rowData) => rowData.city || "N/A";
-							editorTemplate = cityEditor;
-						} else if (col.field === "role") {
-							bodyTemplate = (rowData) => rowData.role || "N/A";
-							editorTemplate = roleEditor;
-						} else if (col.field === "gender") {
-							bodyTemplate = (rowData) => rowData.gender || "N/A";
-							editorTemplate = genderEditor;
-						} else if (col.field === "status") {
-							bodyTemplate = statusBodyTemplate;
-							editorTemplate = statusEditor;
-						} else if (col.field === "name") {
-							bodyTemplate = (rowData) => {
-								const fullName = `${rowData.firstName || ""} ${
-									rowData.lastName || ""
-								}`.trim();
-								return fullName || "N/A";
-							};
-							editorTemplate = nameEditor;
-						} else {
-							editorTemplate = textEditor;
+					<Column
+						field="profilePhoto.url"
+						header="Profile Photo"
+						body={(rowData) =>
+							rowData.profilePhoto?.url ? (
+								<img
+									src={rowData.profilePhoto.url}
+									alt="Profile"
+									style={{
+										width: 40,
+										height: 40,
+										borderRadius: "50%",
+										objectFit: "cover",
+									}}
+								/>
+							) : (
+								<span>No Photo</span>
+							)
 						}
+						editor={(options) => profilePhotoEditor(options)}
+					/>
 
-						return (
-							<Column
-								key={col.field}
-								field={col.field}
-								header={col.header}
-								sortable
-								filter
-								body={bodyTemplate}
-								editor={(options) => editorTemplate(options)}
-							/>
-						);
-					})}
+					{visibleColumns
+						.filter((col) => col.field !== "profilePhoto.url")
+						.map((col) => {
+							let bodyTemplate, editorTemplate;
+
+							if (col.field === "mobileNumber") {
+								bodyTemplate = (rowData) =>
+									rowData.mobileNumber || "N/A";
+								editorTemplate = mobileEditor;
+							} else if (col.field === "address") {
+								bodyTemplate = (rowData) =>
+									rowData.address || "N/A";
+								editorTemplate = addressEditor;
+							} else if (col.field === "city") {
+								bodyTemplate = (rowData) =>
+									rowData.city || "N/A";
+								editorTemplate = cityEditor;
+							} else if (col.field === "role") {
+								bodyTemplate = (rowData) =>
+									rowData.role || "N/A";
+								editorTemplate = roleEditor;
+							} else if (col.field === "gender") {
+								bodyTemplate = (rowData) =>
+									rowData.gender || "N/A";
+								editorTemplate = genderEditor;
+							} else if (col.field === "status") {
+								bodyTemplate = statusBodyTemplate;
+								editorTemplate = statusEditor;
+							} else if (col.field === "name") {
+								bodyTemplate = (rowData) => {
+									const fullName = `${
+										rowData.firstName || ""
+									} ${rowData.lastName || ""}`.trim();
+									return fullName || "N/A";
+								};
+								editorTemplate = nameEditor;
+							} else {
+								editorTemplate = textEditor;
+							}
+
+							return (
+								<Column
+									key={col.field}
+									field={col.field}
+									header={col.header}
+									sortable
+									filter
+									body={bodyTemplate}
+									editor={(options) =>
+										editorTemplate(options)
+									}
+								/>
+							);
+						})}
 
 					<Column
 						header="Edit Row"
