@@ -21,6 +21,7 @@ import { AutoComplete } from "primereact/autocomplete";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function ManageUser() {
+	const { currentUser, isAuth } = useAuth();
 	let emptyUser = {
 		_id: null,
 		firstName: "",
@@ -60,7 +61,8 @@ export default function ManageUser() {
 	const toast = useRef(null);
 	const dt = useRef(null);
 	const allColumns = [
-		{ field: "name", header: "Name" },
+		{ field: "firstName", header: "First Name" },
+		{ field: "lastName", header: "Last Name" },
 		{ field: "gender", header: "Gender" },
 		{ field: "mobileNumber", header: "Mobile Number" },
 		{ field: "address", header: "Address" },
@@ -141,11 +143,6 @@ export default function ManageUser() {
 
 		fetchAllUsers();
 	}, []);
-
-	const hideDialog = () => {
-		setSubmitted(false);
-		setUserDialog(false);
-	};
 
 	const hideDeleteUserDialog = () => {
 		setDeleteUserDialog(false);
@@ -285,33 +282,31 @@ export default function ManageUser() {
 	);
 
 	const nameEditor = (options) => {
-		const rowData = options.rowData;
-
 		const handleFirstNameChange = (e) => {
 			options.editorCallback({
-				...rowData,
+				...options.rowData,
 				firstName: e.target.value,
 			});
 		};
 
 		const handleLastNameChange = (e) => {
 			options.editorCallback({
-				...rowData,
+				...options.rowData,
 				lastName: e.target.value,
 			});
 		};
 
 		return (
-			<div className="flex flex-wrap gap-2">
+			<div className="flex gap-2">
 				<InputText
 					type="text"
-					value={rowData.firstName || ""}
+					value={options.rowData.firstName || ""}
 					onChange={handleFirstNameChange}
 					placeholder="First Name"
 				/>
 				<InputText
 					type="text"
-					value={rowData.lastName || ""}
+					value={options.rowData.lastName || ""}
 					onChange={handleLastNameChange}
 					placeholder="Last Name"
 				/>
@@ -362,7 +357,6 @@ export default function ManageUser() {
 			placeholder="Select Gender"
 		/>
 	);
-	const { currentUser, isAuth, logout } = useAuth();
 
 	const allowEdit = (rowData) => {
 		return rowData.email !== currentUser.email;
