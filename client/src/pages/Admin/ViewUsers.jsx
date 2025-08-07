@@ -63,12 +63,12 @@ export default function ManageUser() {
 	const dt = useRef(null);
 	const allColumns = [
 		{ field: "profilePhoto.url", header: "Profile Photo" },
-		{ field: "firstName", header: "First Name" },
-		{ field: "lastName", header: "Last Name" },
-		{ field: "gender", header: "Gender" },
-		{ field: "mobileNumber", header: "Mobile Number" },
-		{ field: "address", header: "Address" },
-		{ field: "city", header: "City" },
+		// { field: "firstName", header: "First Name" },
+		// { field: "lastName", header: "Last Name" },
+		// { field: "gender", header: "Gender" },
+		// { field: "mobileNumber", header: "Mobile Number" },
+		// { field: "address", header: "Address" },
+		// { field: "city", header: "City" },
 		{ field: "role", header: "Role" },
 		{ field: "status", header: "Status" },
 	];
@@ -241,22 +241,42 @@ export default function ManageUser() {
 	const [profilePreview, setProfilePreview] = useState(null);
 
 	const profilePhotoEditor = (options) => {
-		const handlePhotoChange = (e) => {
+		const handlePhotoChange = async (e) => {
 			const file = e.target.files[0];
 			setProfilePhoto(file);
+
+			const token = localStorage.getItem("token");
 			if (file) {
+				setLoading(true);
+				const response = await axios.patch(
+					`http://127.0.0.1:8000/api/user/updateUser/${options.rowData._id}`,
+					{
+						profilePhoto: file,
+					},
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}
+				);
+
+				console.log("response status:", response.status);
+				console.log("Profile photo updated:", response.data);
+
 				const reader = new FileReader();
 				reader.onloadend = () => {
 					setProfilePreview(reader.result);
-					options.editorCallback({
-						...options.rowData,
-						profilePhoto: {
-							url: reader.result,
-							fileName: file.name,
-						},
-					});
+					options.editorCallback(reader.result);
 				};
 				reader.readAsDataURL(file);
+
+				setLoading(false);
+				toast.current.show({
+					severity: "success",
+					summary: "Updated",
+					detail: "Profile photo updated",
+					life: 3000,
+				});
 			} else {
 				setProfilePreview(null);
 			}
@@ -284,6 +304,19 @@ export default function ManageUser() {
 					onChange={handlePhotoChange}
 					required
 				/>
+				{profilePreview && (
+					<img
+						src={profilePreview}
+						alt="Profile Preview"
+						style={{
+							width: 40,
+							height: 40,
+							borderRadius: "50%",
+							objectFit: "cover",
+						}}
+						className="mb-2"
+					/>
+				)}
 			</div>
 		);
 	};
@@ -1071,3 +1104,5 @@ export default function ManageUser() {
 		</div>
 	);
 }
+
+// city auto complete bug fix is left yet
