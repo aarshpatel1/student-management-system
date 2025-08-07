@@ -18,6 +18,7 @@ import { MultiSelect } from "primereact/multiselect";
 import autoTable from "jspdf-autotable";
 import { Link } from "react-router";
 import { AutoComplete } from "primereact/autocomplete";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ManageUser() {
 	let emptyUser = {
@@ -361,6 +362,11 @@ export default function ManageUser() {
 			placeholder="Select Gender"
 		/>
 	);
+	const { currentUser, isAuth, logout } = useAuth();
+
+	const allowEdit = (rowData) => {
+		return rowData.email !== currentUser.email;
+	};
 
 	const saveUser = async () => {
 		setSubmitted(true);
@@ -515,10 +521,6 @@ export default function ManageUser() {
 			});
 		}
 	};
-
-	const findIndexById = (id) => users.findIndex((u) => u.id === id);
-
-	const createId = () => Math.random().toString(36).substring(2, 7);
 
 	const onGlobalFilterChange = (e) => {
 		const value = e.target.value;
@@ -804,23 +806,6 @@ export default function ManageUser() {
 		</div>
 	);
 
-	const userDialogFooter = (
-		<>
-			<Button
-				label="Cancel"
-				icon="pi pi-times"
-				outlined
-				onClick={hideDialog}
-			/>
-			<Button
-				label="Save"
-				icon="pi pi-check"
-				onClick={saveUser}
-				loading={loading}
-			/>
-		</>
-	);
-
 	const deleteUserDialogFooter = (
 		<>
 			<Button
@@ -895,6 +880,7 @@ export default function ManageUser() {
 						sortable
 						filter
 						filterPlaceholder="Search by email"
+						editor={(options) => emailEditor(options)}
 					/>
 
 					{visibleColumns.map((col) => {
@@ -911,9 +897,6 @@ export default function ManageUser() {
 						} else if (col.field === "city") {
 							bodyTemplate = (rowData) => rowData.city || "N/A";
 							editorTemplate = cityEditor;
-						} else if (col.field === "email") {
-							bodyTemplate = (rowData) => rowData.email || "N/A";
-							editorTemplate = emailEditor;
 						} else if (col.field === "role") {
 							bodyTemplate = (rowData) => rowData.role || "N/A";
 							editorTemplate = roleEditor;
@@ -930,7 +913,7 @@ export default function ManageUser() {
 								}`.trim();
 								return fullName || "N/A";
 							};
-							editorTemplate = (options) => nameEditor(options);
+							editorTemplate = nameEditor;
 						} else {
 							editorTemplate = textEditor;
 						}
@@ -950,7 +933,7 @@ export default function ManageUser() {
 
 					<Column
 						header="Edit Row"
-						rowEditor
+						rowEditor={allowEdit}
 						headerStyle={{ width: "10%", minWidth: "8rem" }}
 						bodyStyle={{ textAlign: "center" }}
 					/>
