@@ -245,78 +245,78 @@ export default function ManageUser() {
 			const file = e.target.files[0];
 			setProfilePhoto(file);
 
-			const token = localStorage.getItem("token");
 			if (file) {
-				setLoading(true);
-				const response = await axios.patch(
-					`http://127.0.0.1:8000/api/user/updateUser/${options.rowData._id}`,
-					{
-						profilePhoto: file,
-					},
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					}
-				);
+				const formData = new FormData();
+				formData.append("profilePhoto", file);
 
-				console.log("response status:", response.status);
-				console.log("Profile photo updated:", response.data);
+				const token = localStorage.getItem("token");
 
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					setProfilePreview(reader.result);
-					options.editorCallback(reader.result);
-				};
-				reader.readAsDataURL(file);
+				try {
+					setLoading(true);
 
-				setLoading(false);
-				toast.current.show({
-					severity: "success",
-					summary: "Updated",
-					detail: "Profile photo updated",
-					life: 3000,
-				});
-			} else {
-				setProfilePreview(null);
+					const response = await axios.patch(
+						`http://127.0.0.1:8000/api/user/updateUser/${options.rowData._id}`,
+						formData,
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+								"Content-Type": "multipart/form-data",
+							},
+						}
+					);
+
+					console.log("Profile photo updated:", response.data);
+
+					// Update the preview and the table row
+					const updatedUrl = response.data.user.profilePhoto.url;
+
+					const _users = users.map((u) =>
+						u._id === options.rowData._id
+							? { ...u, profilePhoto: { url: updatedUrl } }
+							: u
+					);
+					setUsers(_users);
+
+					toast.current.show({
+						severity: "success",
+						summary: "Updated",
+						detail: "Profile photo updated",
+						life: 3000,
+					});
+				} catch (error) {
+					console.error("Error uploading profile photo:", error);
+					toast.current.show({
+						severity: "error",
+						summary: "Error",
+						detail: "Failed to upload profile photo",
+						life: 3000,
+					});
+				} finally {
+					setLoading(false);
+				}
 			}
 		};
 
 		return (
-			<div className="flex flex-column">
-				<img
-					src={options.rowData.profilePhoto.url}
-					alt="Profile"
-					style={{
-						width: 40,
-						height: 40,
-						borderRadius: "50%",
-						objectFit: "cover",
-					}}
-					className="mb-2"
-				/>
-				<input
-					type="file"
-					name="profilePhoto"
-					id="profilePhoto"
-					accept="image/*"
-					className="p-inputtext p-component "
-					onChange={handlePhotoChange}
-					required
-				/>
-				{profilePreview && (
+			<div className="flex flex-column gap-2">
+				{options.rowData.profilePhoto?.url && (
 					<img
-						src={profilePreview}
-						alt="Profile Preview"
+						src={options.rowData.profilePhoto.url}
+						alt="Profile"
 						style={{
 							width: 40,
 							height: 40,
 							borderRadius: "50%",
 							objectFit: "cover",
 						}}
-						className="mb-2"
 					/>
 				)}
+				<input
+					type="file"
+					name="profilePhoto"
+					accept="image/*"
+					onChange={handlePhotoChange}
+				/>
 			</div>
 		);
 	};
