@@ -56,8 +56,8 @@ const ProfilePhotoEditor = ({ rowData, users, setUsers, editing = false }) => {
 	};
 
 	return (
-		<div className="flex flex-column gap-2">
-			<Toast ref={toast} />
+		<div className="flex gap-2">
+			<Toast ref={toast} position="bottom-right" />
 			{rowData.profilePhoto?.url && (
 				<img
 					src={rowData.profilePhoto.url}
@@ -70,7 +70,18 @@ const ProfilePhotoEditor = ({ rowData, users, setUsers, editing = false }) => {
 					}}
 				/>
 			)}
-			{editing && (
+			{loading && (
+				<div
+					className="flex align-items-center justify-content-center"
+					style={{ height: 40 }}
+				>
+					<span
+						className="pi pi-spin pi-spinner"
+						style={{ fontSize: "2em" }}
+					/>
+				</div>
+			)}
+			{editing && !loading && (
 				<FileUpload
 					name="profilePhoto"
 					customUpload
