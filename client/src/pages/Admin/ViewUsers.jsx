@@ -599,7 +599,6 @@ export default function ManageUser() {
 			});
 			return;
 		}
-		setLoading(true);
 		const dataToExport = selectionOnly
 			? selectedUsers.map((user) =>
 					exportData.find((u) => u.id === user.id)
@@ -622,7 +621,6 @@ export default function ManageUser() {
 		link.href = URL.createObjectURL(blob);
 		link.download = "users_export.csv";
 		link.click();
-		setLoading(false);
 		toast.current.show({
 			severity: "success",
 			summary: "Exported",
@@ -641,7 +639,6 @@ export default function ManageUser() {
 			});
 			return;
 		}
-		setLoading(true);
 		import("jspdf").then((jsPDF) => {
 			import("jspdf-autotable").then(() => {
 				const doc = new jsPDF.default(0, 0);
@@ -663,7 +660,6 @@ export default function ManageUser() {
 				doc.save("users.pdf");
 			});
 		});
-		setLoading(false);
 		toast.current.show({
 			severity: "success",
 			summary: "Exported",
@@ -682,7 +678,6 @@ export default function ManageUser() {
 			});
 			return;
 		}
-		setLoading(true);
 		import("xlsx").then((xlsx) => {
 			const worksheet = xlsx.utils.json_to_sheet(exportData);
 			const workbook = {
@@ -696,7 +691,6 @@ export default function ManageUser() {
 
 			saveAsExcelFile(excelBuffer, "users");
 		});
-		setLoading(false);
 		toast.current.show({
 			severity: "success",
 			summary: "Exported",
@@ -706,7 +700,6 @@ export default function ManageUser() {
 	};
 
 	const saveAsExcelFile = (buffer, fileName) => {
-		setLoading(true);
 		import("file-saver").then((module) => {
 			if (module && module.default) {
 				let EXCEL_TYPE =
@@ -725,7 +718,6 @@ export default function ManageUser() {
 				);
 			}
 		});
-		setLoading(false);
 		toast.current.show({
 			severity: "success",
 			summary: "Exported",
@@ -927,14 +919,6 @@ export default function ManageUser() {
 						} else if (col.field === "status") {
 							bodyTemplate = statusBodyTemplate;
 							editorTemplate = statusEditor;
-						} else if (col.field === "name") {
-							bodyTemplate = (rowData) => {
-								const fullName = `${rowData.firstName || ""} ${
-									rowData.lastName || ""
-								}`.trim();
-								return fullName || "N/A";
-							};
-							editorTemplate = nameEditor;
 						} else {
 							editorTemplate = textEditor;
 						}
