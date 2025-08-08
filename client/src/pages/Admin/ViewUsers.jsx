@@ -113,12 +113,29 @@ export default function ManageUser() {
 
 	const [visibleColumns, setVisibleColumns] = useState(allColumns);
 
+	// Add this with your other state variables
+	const [tempColumns, setTempColumns] = useState(visibleColumns);
+
+	// Add this function to handle applying column changes
+	const applyColumnChanges = () => {
+		if (tempColumns) {
+			// Make sure the columns are in the right order
+			let orderedSelectedCols = allColumns.filter((col) =>
+				tempColumns.some((sCol) => sCol.field === col.field)
+			);
+			setVisibleColumns(orderedSelectedCols);
+
+			toast.current.show({
+				severity: "success",
+				summary: "Columns Updated",
+				detail: "Table columns have been updated",
+				life: 3000,
+			});
+		}
+	};
+
 	const onColumnToggle = (event) => {
-		let selectedCols = event.value;
-		let orderedSelectedCols = allColumns.filter((col) =>
-			selectedCols.some((sCol) => sCol.field === col.field)
-		);
-		setVisibleColumns(orderedSelectedCols);
+		setTempColumns(event.value);
 	};
 
 	const token = localStorage.getItem("token");
@@ -795,6 +812,7 @@ export default function ManageUser() {
 		></Tag>
 	);
 
+	// Replace the current MultiSelect in the header with this implementation
 	const header = (
 		<div className="flex flex-wrap gap-3 align-items-center justify-content-between">
 			<h4 className="m-0">Manage Users</h4>
@@ -807,15 +825,35 @@ export default function ManageUser() {
 						placeholder="Search..."
 					/>
 				</IconField>
-				<MultiSelect
-					value={visibleColumns}
-					options={allColumns}
-					optionLabel="header"
-					onChange={onColumnToggle}
-					display="chip"
-					className="w-full md:w-20rem"
-					placeholder="Select Columns"
-				/>
+
+				{/* Column selection with apply button */}
+				<div className="flex align-items-center">
+					<MultiSelect
+						value={tempColumns || visibleColumns} // Use a temporary state while selecting
+						options={allColumns}
+						optionLabel="header"
+						onChange={(e) => setTempColumns(e.value)}
+						display="chip"
+						className="w-full md:w-20rem mr-2"
+						placeholder="Select Columns"
+					/>
+					<Button
+						icon="pi pi-check"
+						className="p-button-sm"
+						tooltip="Apply Columns"
+						tooltipOptions={{
+							position: "bottom",
+							showDelay: 1000,
+							hideDelay: 300,
+						}}
+						onClick={applyColumnChanges}
+						disabled={
+							!tempColumns ||
+							JSON.stringify(tempColumns) ===
+								JSON.stringify(visibleColumns)
+						}
+					/>
+				</div>
 			</div>
 		</div>
 	);
