@@ -19,6 +19,7 @@ import autoTable from "jspdf-autotable";
 import { Link } from "react-router";
 import { AutoComplete } from "primereact/autocomplete";
 import { useAuth } from "../../contexts/AuthContext";
+import ProfilePhotoEditor from "../../components/ProfilePhotoEditor";
 
 export default function ManageUser() {
 	const { currentUser, isAuth } = useAuth();
@@ -956,15 +957,12 @@ export default function ManageUser() {
 						field="profilePhoto"
 						header="Profile Photo"
 						body={(rowData) => (
-							<img
-								src={rowData.profilePhoto.url || "No Photo"}
-								alt={`${
-									rowData.firstName || ""
-								}'s Profile Photo`}
-								className="w-3rem h-3rem border-circle"
+							<ProfilePhotoEditor
+								rowData={rowData}
+								users={users}
+								setUsers={setUsers}
 							/>
 						)}
-						editor={(options) => profilePhotoEditor(options)}
 					/>
 
 					{visibleColumns.map((col) => {
