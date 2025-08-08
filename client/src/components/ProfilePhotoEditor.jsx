@@ -1,10 +1,9 @@
-// components/ProfilePhotoEditor.js
 import React, { useRef, useState } from "react";
 import { Toast } from "primereact/toast";
 import { FileUpload } from "primereact/fileupload";
 import axios from "axios";
 
-const ProfilePhotoEditor = ({ rowData, users, setUsers }) => {
+const ProfilePhotoEditor = ({ rowData, users, setUsers, editing = false }) => {
 	const toast = useRef(null);
 	const [loading, setLoading] = useState(false);
 
@@ -71,16 +70,18 @@ const ProfilePhotoEditor = ({ rowData, users, setUsers }) => {
 					}}
 				/>
 			)}
-			<FileUpload
-				name="profilePhoto"
-				customUpload
-				auto
-				uploadHandler={uploadPhoto}
-				accept="image/*"
-				mode="basic"
-				chooseLabel="Browse"
-				disabled={loading}
-			/>
+			{editing && (
+				<FileUpload
+					name="profilePhoto"
+					customUpload
+					auto
+					uploadHandler={uploadPhoto}
+					accept="image/*"
+					mode="basic"
+					chooseLabel="Upload"
+					disabled={loading}
+				/>
+			)}
 		</div>
 	);
 };

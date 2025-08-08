@@ -963,6 +963,14 @@ export default function ManageUser() {
 								setUsers={setUsers}
 							/>
 						)}
+						editor={(options) => (
+							<ProfilePhotoEditor
+								rowData={options.rowData}
+								users={users}
+								setUsers={setUsers}
+								editing={true}
+							/>
+						)}
 					/>
 
 					{visibleColumns.map((col) => {
