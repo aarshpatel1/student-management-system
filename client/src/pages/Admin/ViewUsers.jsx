@@ -386,62 +386,6 @@ export default function ManageUser() {
 		/>
 	);
 
-	const [profilePhoto, setProfilePhoto] = useState(null);
-	const [profilePreview, setProfilePreview] = useState(null);
-
-	const profilePhotoEditor = (options) => {
-		const handlePhotoChange = (e) => {
-			const file = e.target.files[0];
-			setProfilePhoto(file);
-			if (file) {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					setProfilePreview(reader.result);
-				};
-				reader.readAsDataURL(file);
-			} else {
-				setProfilePreview(null);
-			}
-		};
-		return (
-			<>
-				<img
-					src={options.rowData.profilePhoto.url || ""}
-					alt="Profile Preview"
-					className="mb-2"
-					style={{
-						width: "100px",
-						height: "100px",
-						objectFit: "cover",
-						borderRadius: "8px",
-					}}
-				/>
-				<input
-					type="file"
-					name="profilePhoto"
-					id="profilePhoto"
-					accept="image/*"
-					className="p-component p-inputtext"
-					onChange={handlePhotoChange}
-					required
-				/>
-				{profilePreview && (
-					<img
-						src={profilePreview}
-						alt="Profile Preview"
-						style={{
-							width: 40,
-							height: 40,
-							borderRadius: "50%",
-							objectFit: "cover",
-						}}
-						className="mb-2"
-					/>
-				)}
-			</>
-		);
-	};
-
 	const allowEdit = (rowData) => {
 		return rowData.email !== currentUser.email;
 	};
