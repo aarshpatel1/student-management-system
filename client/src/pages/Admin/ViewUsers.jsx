@@ -155,9 +155,11 @@ export default function ManageUser() {
 	const onRowEditComplete = (e) => {
 		let _users = [...users];
 		let { newData, index } = e;
-		setLoading(true);
 
 		console.log("Row edit data before processing:", newData);
+
+		// Get the original user data before edits
+		const originalUser = _users[index];
 
 		// Create a clean object with only the fields that should be sent to the API
 		const userToUpdate = {
@@ -189,36 +191,61 @@ export default function ManageUser() {
 
 		console.log("Row edit data after processing:", userToUpdate);
 
-		// Send update to backend
-		updateUserInDatabase(userToUpdate)
-			.then((response) => {
-				console.log("Update API response:", response.data);
+		// Check if any fields have actually changed
+		const hasChanges = Object.keys(userToUpdate).some((key) => {
+			// Skip _id field as it's not something that changes
+			if (key === "_id") return false;
+			// Handle different data types properly
+			if (key === "status") {
+				return (
+					Boolean(originalUser[key]) !== Boolean(userToUpdate[key])
+				);
+			}
+			return originalUser[key] !== userToUpdate[key];
+		});
 
-				_users[index] = {
-					..._users[index], // Keep existing data
-					...userToUpdate, // Override with updated fields
-				};
+		// Only proceed with update if changes were made
+		if (hasChanges) {
+			setLoading(true);
+			// Send update to backend
+			updateUserInDatabase(userToUpdate)
+				.then((response) => {
+					console.log("Update API response:", response.data);
 
-				setUsers(_users);
-				toast.current.show({
-					severity: "success",
-					summary: "Updated",
-					detail: "User info updated",
-					life: 3000,
+					_users[index] = {
+						..._users[index], // Keep existing data
+						...userToUpdate, // Override with updated fields
+					};
+
+					setUsers(_users);
+					toast.current.show({
+						severity: "success",
+						summary: "Updated",
+						detail: "User info updated",
+						life: 3000,
+					});
+				})
+				.catch((error) => {
+					console.error("Error updating user:", error);
+					toast.current.show({
+						severity: "error",
+						summary: "Error",
+						detail: "Failed to update user information",
+						life: 3000,
+					});
+				})
+				.finally(() => {
+					setLoading(false);
 				});
-			})
-			.catch((error) => {
-				console.error("Error updating user:", error);
-				toast.current.show({
-					severity: "error",
-					summary: "Error",
-					detail: "Failed to update user information",
-					life: 3000,
-				});
-			})
-			.finally(() => {
-				setLoading(false);
+		} else {
+			console.log("No changes detected, skipping update request");
+			toast.current.show({
+				severity: "info",
+				summary: "No Changes",
+				detail: "No changes detected",
+				life: 3000,
 			});
+		}
 	};
 
 	const updateUserInDatabase = async (userData) => {
